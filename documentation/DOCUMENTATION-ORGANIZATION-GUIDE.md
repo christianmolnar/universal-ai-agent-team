@@ -80,15 +80,19 @@ This guide defines where to place documentation files to maintain clean organiza
 ### **📁 `/documentation/planning/`**
 **What Goes Here:**
 - Project roadmaps and timelines
+- **Implementation plans and trackers** (central source of truth)
 - Feature planning documents
 - Requirements gathering
 - Strategic planning documents
-- Implementation phases
+- Implementation phases and milestones
+- Development timeline tracking
 
 **File Naming Pattern:**
+- `IMPLEMENTATION-PLAN-AND-TRACKER.md` (central source of truth)
 - `PROJECT-ROADMAP.md`
 - `FEATURE-REQUIREMENTS.md`
 - `IMPLEMENTATION-PHASES.md`
+- `TIMELINE-[PROJECT].md`
 
 ---
 
