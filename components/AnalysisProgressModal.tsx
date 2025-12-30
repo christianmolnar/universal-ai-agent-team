@@ -1,19 +1,16 @@
 /**
- * AnalysisProgressModal Component
- * Real-time progress display during batch property analysis
+ * Analysis Progress Modal
+ * Real-time progress display for batch property analysis
  */
 
 'use client';
 
-import { Fragment } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
-import { CheckCircleIcon, ArrowPathIcon, XCircleIcon } from '@heroicons/react/24/solid';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import React from 'react';
 
 export interface PropertyStatus {
   id: string;
   address: string;
-  status: 'pending' | 'scraping' | 'analyzing' | 'reviewing' | 'validating' | 'completed' | 'failed';
+  status: 'completed' | 'in-progress' | 'pending' | 'error';
   score?: number;
   error?: string;
 }
@@ -25,8 +22,11 @@ interface AnalysisProgressModalProps {
   totalProperties: number;
   currentStep: string;
   propertyStatuses: PropertyStatus[];
-  overallProgress: number; // 0-100
-  canClose?: boolean; // Allow closing during analysis
+  overallProgress: number;
+  canClose: boolean;
+  onStopAfterCurrent?: () => void;
+  onCancel?: () => void;
+  isStopping?: boolean;
 }
 
 export default function AnalysisProgressModal({
@@ -37,197 +37,197 @@ export default function AnalysisProgressModal({
   currentStep,
   propertyStatuses,
   overallProgress,
-  canClose = false
+  canClose,
+  onStopAfterCurrent,
+  onCancel,
+  isStopping = false,
 }: AnalysisProgressModalProps) {
-  const completedCount = propertyStatuses.filter(p => p.status === 'completed').length;
-  const failedCount = propertyStatuses.filter(p => p.status === 'failed').length;
+  if (!isOpen) return null;
 
+  const completedCount = propertyStatuses.filter((p) => p.status === 'completed').length;
+  const isComplete = completedCount === totalProperties && overallProgress >= 100;
+
+  // Status icons
   const getStatusIcon = (status: PropertyStatus['status']) => {
     switch (status) {
       case 'completed':
-        return <CheckCircleIcon className="w-5 h-5 text-[var(--status-active)]" />;
-      case 'failed':
-        return <XCircleIcon className="w-5 h-5 text-red-500" />;
+        return '✓';
+      case 'in-progress':
+        return '⟳';
       case 'pending':
-        return <div className="w-5 h-5 rounded-full border-2 border-[var(--border-color)]"></div>;
-      default:
-        return <ArrowPathIcon className="w-5 h-5 text-[var(--accent-primary)] animate-spin" />;
+        return '○';
+      case 'error':
+        return '✗';
     }
   };
 
-  const getStatusLabel = (status: PropertyStatus['status']) => {
-    const labels: Record<typeof status, string> = {
-      pending: 'Pending',
-      scraping: 'Scraping data...',
-      analyzing: 'Analyzing...',
-      reviewing: 'Quality review...',
-      validating: 'Final validation...',
-      completed: 'Complete',
-      failed: 'Failed'
-    };
-    return labels[status];
+  // Status colors
+  const getStatusColor = (status: PropertyStatus['status']) => {
+    switch (status) {
+      case 'completed':
+        return 'text-green-600';
+      case 'in-progress':
+        return 'text-blue-600 animate-spin';
+      case 'pending':
+        return 'text-gray-400';
+      case 'error':
+        return 'text-red-600';
+    }
   };
 
-  const processSteps = [
-    { id: 'scraping', label: 'Data Scraping', status: overallProgress > 10 ? 'complete' : overallProgress > 0 ? 'active' : 'pending' },
-    { id: 'analyzing', label: 'Primary Analysis (Claude)', status: overallProgress > 40 ? 'complete' : overallProgress > 10 ? 'active' : 'pending' },
-    { id: 'reviewing', label: 'Quality Review (GPT-4)', status: overallProgress > 70 ? 'complete' : overallProgress > 40 ? 'active' : 'pending' },
-    { id: 'validating', label: 'Final Validation', status: overallProgress > 90 ? 'complete' : overallProgress > 70 ? 'active' : 'pending' },
-    { id: 'complete', label: 'Report Generation', status: overallProgress === 100 ? 'complete' : 'pending' }
-  ];
-
   return (
-    <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-50" onClose={canClose ? onClose : () => {}}>
-        <Transition.Child
-          as={Fragment}
-          enter="ease-out duration-300"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="ease-in duration-200"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
-        >
-          <div className="fixed inset-0 bg-black bg-opacity-75" />
-        </Transition.Child>
-
-        <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4">
-            <Transition.Child
-              as={Fragment}
-              enter="ease-out duration-300"
-              enterFrom="opacity-0 scale-95"
-              enterTo="opacity-100 scale-100"
-              leave="ease-in duration-200"
-              leaveFrom="opacity-100 scale-100"
-              leaveTo="opacity-0 scale-95"
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black bg-opacity-75">
+      <div className="bg-[var(--card-background)] rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="px-6 py-4 border-b-2 border-[var(--border-color)] flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-[var(--text-primary)]">
+              Analyzing Properties
+            </h2>
+            <p className="text-sm text-[var(--text-secondary)] mt-1">
+              Batch ID: {batchId}
+            </p>
+          </div>
+          {canClose && (
+            <button
+              onClick={onClose}
+              className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
             >
-              <Dialog.Panel className="w-full max-w-3xl transform overflow-hidden rounded-2xl bg-[var(--card-background)] border-2 border-[var(--border-color)] p-8 text-left align-middle shadow-2xl transition-all">
-                <div className="flex items-center justify-between mb-6">
-                  <Dialog.Title className="text-2xl font-bold text-[var(--text-primary)]">
-                    {overallProgress === 100 ? 'Analysis Complete!' : 'Analyzing Properties'}
-                  </Dialog.Title>
-                  {canClose && (
-                    <button
-                      onClick={onClose}
-                      className="p-2 rounded-lg hover:bg-[var(--hover-background)] transition-colors"
-                    >
-                      <XMarkIcon className="w-6 h-6 text-[var(--text-secondary)]" />
-                    </button>
-                  )}
-                </div>
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
 
-                {/* Overall Progress Bar */}
-                <div className="mb-8">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-[var(--text-secondary)]">
-                      Overall Progress
-                    </span>
-                    <span className="text-sm font-bold text-[var(--accent-primary)]">
-                      {overallProgress}%
-                    </span>
-                  </div>
-                  <div className="w-full h-3 bg-[var(--input-background)] rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-[var(--accent-secondary)] to-[var(--accent-primary)] transition-all duration-500"
-                      style={{ width: `${overallProgress}%` }}
-                    />
-                  </div>
-                  <p className="text-sm text-[var(--text-secondary)] mt-2">
-                    {currentStep}
-                  </p>
-                </div>
+        {/* Stopping Banner */}
+        {isStopping && (
+          <div className="px-6 py-3 bg-orange-500 bg-opacity-10 border-b border-orange-500">
+            <div className="flex items-center gap-2 text-orange-600">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <span className="font-semibold">Stopping after current property...</span>
+            </div>
+          </div>
+        )}
 
-                {/* Property Status List */}
-                <div className="mb-8">
-                  <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
-                    Properties ({completedCount}/{totalProperties} completed)
-                  </h3>
-                  <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
-                    {propertyStatuses.map((property) => (
-                      <div
-                        key={property.id}
-                        className="flex items-center justify-between p-3 rounded-lg bg-[var(--input-background)]"
-                      >
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          {getStatusIcon(property.status)}
-                          <span className="text-sm text-[var(--text-primary)] truncate">
-                            {property.address || 'Property'}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-3 flex-shrink-0">
-                          {property.score !== undefined && (
-                            <span className="text-sm font-bold text-[var(--accent-primary)]">
-                              {property.score}/100
-                            </span>
-                          )}
-                          <span className={`text-xs ${
-                            property.status === 'completed' ? 'text-[var(--status-active)]' :
-                            property.status === 'failed' ? 'text-red-500' :
-                            'text-[var(--text-secondary)]'
-                          }`}>
-                            {getStatusLabel(property.status)}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+        {/* Progress Section */}
+        <div className="p-6 space-y-4 border-b border-[var(--border-color)]">
+          {/* Overall Progress Bar */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-[var(--text-primary)]">Overall Progress</span>
+              <span className="text-sm font-semibold text-[var(--accent-primary)]">{Math.round(overallProgress)}%</span>
+            </div>
+            <div className="w-full h-3 bg-[var(--input-background)] rounded-full overflow-hidden">
+              <div
+                className="h-full bg-[var(--accent-primary)] transition-all duration-300 rounded-full"
+                style={{ width: `${overallProgress}%` }}
+              />
+            </div>
+          </div>
 
-                {/* Process Steps */}
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
-                    Process
-                  </h3>
-                  <div className="space-y-2">
-                    {processSteps.map((step, index) => (
-                      <div key={step.id} className="flex items-center gap-3">
-                        <div className={`
-                          w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold
-                          ${step.status === 'complete' 
-                            ? 'bg-[var(--status-active)] text-[var(--background)]' 
-                            : step.status === 'active'
-                            ? 'bg-[var(--accent-primary)] text-[var(--background)] animate-pulse'
-                            : 'bg-[var(--input-background)] text-[var(--text-muted)]'
-                          }
-                        `}>
-                          {step.status === 'complete' ? '✓' : index + 1}
-                        </div>
-                        <span className={`text-sm ${
-                          step.status === 'complete' || step.status === 'active'
-                            ? 'text-[var(--text-primary)]'
-                            : 'text-[var(--text-muted)]'
-                        }`}>
-                          {step.label}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Action Button */}
-                {overallProgress === 100 && (
-                  <button
-                    onClick={onClose}
-                    className="w-full py-3 px-6 rounded-lg bg-[var(--accent-primary)] hover:bg-[var(--accent-secondary)] text-[var(--background)] font-semibold transition-colors"
-                  >
-                    View Results
-                  </button>
-                )}
-
-                {failedCount > 0 && (
-                  <div className="mt-4 p-4 rounded-lg bg-red-500 bg-opacity-10 border border-red-500">
-                    <p className="text-sm text-red-500">
-                      {failedCount} {failedCount === 1 ? 'property' : 'properties'} failed to analyze. 
-                      Results will be available for successfully analyzed properties.
-                    </p>
-                  </div>
-                )}
-              </Dialog.Panel>
-            </Transition.Child>
+          {/* Current Step */}
+          <div className="flex items-center gap-3 p-4 bg-[var(--input-background)] rounded-lg">
+            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center">
+              <svg className="w-5 h-5 text-white animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12a8 8 0 0116 0" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <div className="text-sm font-medium text-[var(--text-primary)]">
+                {currentStep}
+              </div>
+              <div className="text-xs text-[var(--text-secondary)] mt-1">
+                Property {completedCount + 1} of {totalProperties}
+              </div>
+            </div>
           </div>
         </div>
-      </Dialog>
-    </Transition>
+
+        {/* Property Status List */}
+        <div className="flex-1 overflow-y-auto p-6">
+          <h3 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-3">
+            Properties ({completedCount}/{totalProperties})
+          </h3>
+          <div className="space-y-2">
+            {propertyStatuses.map((property) => (
+              <div
+                key={property.id}
+                className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
+                  property.status === 'in-progress'
+                    ? 'bg-blue-500 bg-opacity-10 border border-blue-500'
+                    : property.status === 'completed'
+                    ? 'bg-green-500 bg-opacity-10'
+                    : property.status === 'error'
+                    ? 'bg-red-500 bg-opacity-10'
+                    : 'bg-[var(--input-background)]'
+                }`}
+              >
+                <span className={`text-xl ${getStatusColor(property.status)}`}>
+                  {getStatusIcon(property.status)}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-[var(--text-primary)] truncate">
+                    {property.address}
+                  </div>
+                  {property.score !== undefined && (
+                    <div className="text-sm text-[var(--text-secondary)]">
+                      Score: {property.score}/100
+                    </div>
+                  )}
+                  {property.error && (
+                    <div className="text-sm text-red-600">
+                      Error: {property.error}
+                    </div>
+                  )}
+                </div>
+                {property.status === 'in-progress' && (
+                  <svg className="w-5 h-5 text-blue-500 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer Actions */}
+        <div className="px-6 py-4 border-t-2 border-[var(--border-color)] flex items-center justify-between">
+          {!isComplete && (onStopAfterCurrent || onCancel) && (
+            <div className="flex gap-3">
+              {onCancel && (
+                <button
+                  onClick={onCancel}
+                  disabled={isStopping}
+                  className="px-6 py-3 rounded-lg bg-red-500 hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold transition-colors"
+                >
+                  Cancel Analysis
+                </button>
+              )}
+              {onStopAfterCurrent && (
+                <button
+                  onClick={onStopAfterCurrent}
+                  disabled={isStopping}
+                  className="px-6 py-3 rounded-lg bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold transition-colors"
+                >
+                  {isStopping ? 'Stopping...' : 'Stop After Current'}
+                </button>
+              )}
+            </div>
+          )}
+          {isComplete && (
+            <button
+              onClick={onClose}
+              className="ml-auto px-8 py-3 rounded-lg bg-[var(--accent-primary)] hover:bg-[var(--accent-secondary)] text-[var(--background)] font-bold transition-colors"
+            >
+              View Results
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
