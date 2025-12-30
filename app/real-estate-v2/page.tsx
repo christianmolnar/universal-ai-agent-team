@@ -26,6 +26,7 @@ export default function RealEstateAnalysisV2Page() {
   const [showSearchImport, setShowSearchImport] = useState(false);
   const [searchUrl, setSearchUrl] = useState('');
   const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
   
   // Preview modal state
   const [showPreviewModal, setShowPreviewModal] = useState(false);
@@ -179,8 +180,17 @@ export default function RealEstateAnalysisV2Page() {
 
     setError(null);
     setIsImporting(true);
+    setImportProgress({ current: 0, total: 3 }); // Assume 3 pages max
 
     try {
+      // Simulate progress updates (since API doesn't provide streaming)
+      const progressInterval = setInterval(() => {
+        setImportProgress(prev => ({
+          ...prev,
+          current: Math.min(prev.current + 1, prev.total)
+        }));
+      }, 1000);
+
       const response = await fetch('/api/zillow/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -189,6 +199,8 @@ export default function RealEstateAnalysisV2Page() {
           maxPages: 3,
         }),
       });
+
+      clearInterval(progressInterval);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -227,6 +239,7 @@ export default function RealEstateAnalysisV2Page() {
       setError(err instanceof Error ? err.message : 'Failed to import search results');
     } finally {
       setIsImporting(false);
+      setImportProgress({ current: 0, total: 0 });
     }
   };
 
@@ -395,7 +408,11 @@ export default function RealEstateAnalysisV2Page() {
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        Importing Properties...
+                        <span>
+                          {importProgress.total > 0 
+                            ? `Scraping page ${importProgress.current} of ${importProgress.total}...` 
+                            : 'Importing Properties...'}
+                        </span>
                       </>
                     ) : (
                       <>
@@ -575,7 +592,7 @@ export default function RealEstateAnalysisV2Page() {
                     }}
                     className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
                       selectedProperties.has(index)
-                        ? 'border-[var(--accent-primary)] bg-[var(--accent-primary)] bg-opacity-10'
+                        ? 'border-[var(--accent-primary)]'
                         : 'border-[var(--border-color)] hover:border-[var(--accent-secondary)]'
                     }`}
                   >
@@ -609,23 +626,64 @@ export default function RealEstateAnalysisV2Page() {
                 Cancel
               </button>
               <button
-                onClick={() => {
+                onClick={async () => {
                   const selectedUrls = previewProperties
                     .filter((_, index) => selectedProperties.has(index))
                     .map(p => p.url);
+                  
+                  // Set URLs and close modal
                   setUrls(selectedUrls);
                   setShowPreviewModal(false);
                   setShowSearchImport(false);
                   
-                  // Auto-start analysis if user has properties selected
+                  // Start analysis immediately
                   if (selectedUrls.length > 0) {
-                    setTimeout(() => handleStartAnalysis(), 100);
+                    // Give state time to update, then start
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    
+                    setError(null);
+                    setIsAnalyzing(true);
+                    setResults([]);
+                    setPropertyAddresses(new Map());
+
+                    try {
+                      const apiPropertyType = propertyType === 'rentals' ? 'rental' : propertyType === 'primary' ? 'primary' : 'both';
+                      
+                      const properties = selectedUrls.map(url => ({
+                        url,
+                        type: apiPropertyType === 'both' ? 'rental' : apiPropertyType,
+                      }));
+
+                      const response = await fetch('/api/analysis/batch', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          userId: 'demo-user',
+                          propertyType: apiPropertyType,
+                          properties,
+                        }),
+                      });
+
+                      if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Failed to start analysis');
+                      }
+
+                      const data = await response.json();
+                      setCurrentBatchId(data.batchId);
+                      connectWebSocket(data.batchId);
+
+                    } catch (err) {
+                      console.error('Analysis error:', err);
+                      setError(err instanceof Error ? err.message : 'Failed to start analysis');
+                      setIsAnalyzing(false);
+                    }
                   }
                 }}
                 disabled={selectedProperties.size === 0}
                 className="px-6 py-3 rounded-lg bg-[var(--accent-primary)] hover:bg-[var(--accent-secondary)] disabled:bg-[var(--input-background)] disabled:cursor-not-allowed text-[var(--background)] font-bold transition-colors"
               >
-                Analyze {selectedProperties.size} {selectedProperties.size === 1 ? 'Property' : 'Properties'}
+                Start Analysis - {selectedProperties.size} {selectedProperties.size === 1 ? 'Property' : 'Properties'}
               </button>
             </div>
           </div>

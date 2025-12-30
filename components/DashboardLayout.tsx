@@ -21,7 +21,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     {
       title: 'Analysis Domains',
       items: [
-        { label: 'Real Estate', href: '/real-estate', icon: '🏘️', badge: 'Active' },
+        { label: 'Real Estate', href: '/real-estate-v2', icon: '🏘️', badge: 'Active' },
         { label: 'Business Analysis', href: '/business', icon: '💼', badge: 'Development' },
         { label: 'Research Platform', href: '/research', icon: '🔬', badge: 'Development' },
         { label: 'Financial Analysis', href: '/financial', icon: '📈', badge: 'Development' },
@@ -74,13 +74,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <div>
               <h1 className="page-title">
                 {pathname === '/' && 'Dashboard'}
-                {pathname === '/real-estate' && 'Real Estate Analysis'}
+                {pathname === '/real-estate-v2' && 'Real Estate Analysis'}
                 {pathname === '/config' && 'Configuration'}
                 {pathname === '/portfolio' && 'Current Portfolio'}
               </h1>
               <p className="page-subtitle">
                 {pathname === '/' && 'Overview of your analysis platform and portfolio'}
-                {pathname === '/real-estate' && 'Property evaluation with proven methodology'}
+                {pathname === '/real-estate-v2' && 'Property evaluation with proven methodology'}
                 {pathname === '/config' && 'Configure your analysis preferences'}
                 {pathname === '/portfolio' && 'Manage your property investments'}
               </p>

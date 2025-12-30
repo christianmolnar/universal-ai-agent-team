@@ -28,7 +28,8 @@ export default function URLInputGrid({
     if (!url) return true; // Empty is OK
     if (validator) return validator(url);
     
-    // Default Zillow URL validation
+    // Default Zillow URL validation - more permissive pattern
+    // Matches: zillow.com/homedetails/{address}/{zpid}_zpid with optional trailing slash and query params
     const zillowPattern = /^https?:\/\/(www\.)?zillow\.com\/homedetails\/.+\/\d+_zpid/i;
     return zillowPattern.test(url);
   };

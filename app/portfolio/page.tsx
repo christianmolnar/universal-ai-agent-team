@@ -8,7 +8,7 @@ import { ZillowParser, convertZillowToProperty, type ZillowPropertyData } from '
 // Property confirmation modal component
 interface PropertyConfirmationModalProps {
   property: ZillowPropertyData & { metrics?: any };
-  onConfirm: (propertyType: 'primary' | 'rental', financialData?: FinancialData, editedPropertyData?: Partial<ZillowPropertyData>) => void;
+  onConfirm: (propertyType: 'primary' | 'rental', financialData?: FinancialData) => void;
   onCancel: () => void;
 }
 
@@ -31,25 +31,13 @@ function PropertyConfirmationModal({ property, onConfirm, onCancel }: PropertyCo
     monthlyRent: undefined
   });
   
-  // Editable property details
-  const [editedProperty, setEditedProperty] = useState({
-    sqft: property.sqft && property.sqft > 0 ? property.sqft : undefined,
-    lotSize: property.lotSize && property.lotSize > 0 ? property.lotSize : undefined,
-    bedrooms: property.bedrooms || 0,
-    bathrooms: property.bathrooms || 0
-  });
-  
   // Convert lot size from sqft to acres if needed
-  const lotSizeAcres = editedProperty.lotSize && editedProperty.lotSize > 1000 
-    ? (editedProperty.lotSize / 43560).toFixed(2) 
-    : (editedProperty.lotSize || 0);
+  const lotSizeAcres = property.lotSize > 1000 
+    ? (property.lotSize / 43560).toFixed(2) 
+    : property.lotSize;
 
   const handleConfirm = () => {
-    onConfirm(
-      selectedType, 
-      showFinancialFields ? financialData : undefined,
-      editedProperty
-    );
+    onConfirm(selectedType, showFinancialFields ? financialData : undefined);
   };
 
   return (
@@ -84,67 +72,31 @@ function PropertyConfirmationModal({ property, onConfirm, onCancel }: PropertyCo
             </p>
           </div>
 
-          {/* Key Details Grid - Now editable */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Review & Edit Property Details (if incorrect)
-            </label>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-gray-50 p-3 rounded">
-                <label className="text-xs text-gray-600 block mb-1">Price</label>
-                <p className="text-lg font-semibold text-gray-900">
-                  ${property.price?.toLocaleString() || 'N/A'}
-                </p>
-              </div>
-              <div className="bg-gray-50 p-3 rounded">
-                <label className="text-xs text-gray-600 block mb-1">Bedrooms</label>
-                <input
-                  type="number"
-                  value={editedProperty.bedrooms}
-                  onChange={(e) => setEditedProperty({...editedProperty, bedrooms: Number(e.target.value)})}
-                  className="w-full text-lg font-semibold text-gray-900 bg-white border border-gray-300 rounded px-2 py-1"
-                />
-              </div>
-              <div className="bg-gray-50 p-3 rounded">
-                <label className="text-xs text-gray-600 block mb-1">Bathrooms</label>
-                <input
-                  type="number"
-                  step="0.5"
-                  value={editedProperty.bathrooms}
-                  onChange={(e) => setEditedProperty({...editedProperty, bathrooms: Number(e.target.value)})}
-                  className="w-full text-lg font-semibold text-gray-900 bg-white border border-gray-300 rounded px-2 py-1"
-                />
-              </div>
-              <div className="bg-gray-50 p-3 rounded">
-                <label className="text-xs text-gray-600 block mb-1">Year Built</label>
-                <p className="text-lg font-semibold text-gray-900">
-                  {property.yearBuilt || 'N/A'}
-                </p>
-              </div>
+          {/* Key Details Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-gray-50 p-3 rounded">
+              <p className="text-xs text-gray-600">Price</p>
+              <p className="text-lg font-semibold text-gray-900">
+                ${property.price?.toLocaleString() || 'N/A'}
+              </p>
             </div>
-            <div className="grid grid-cols-2 gap-4 mt-4">
-              <div className="bg-gray-50 p-3 rounded">
-                <label className="text-xs text-gray-600 block mb-1">Square Feet</label>
-                <input
-                  type="number"
-                  value={editedProperty.sqft || ''}
-                  onChange={(e) => setEditedProperty({...editedProperty, sqft: e.target.value ? Number(e.target.value) : undefined})}
-                  className="w-full text-lg font-semibold text-gray-900 bg-white border border-gray-300 rounded px-2 py-1"
-                  placeholder="e.g. 1530"
-                />
-              </div>
-              <div className="bg-gray-50 p-3 rounded">
-                <label className="text-xs text-gray-600 block mb-1">Lot Size (acres)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={typeof lotSizeAcres === 'string' ? parseFloat(lotSizeAcres) : lotSizeAcres}
-                  onChange={(e) => setEditedProperty({...editedProperty, lotSize: e.target.value ? Math.round(Number(e.target.value) * 43560) : undefined})}
-                  className="w-full text-lg font-semibold text-gray-900 bg-white border border-gray-300 rounded px-2 py-1"
-                  placeholder="e.g. 0.25"
-                />
-                <p className="text-xs text-gray-500 mt-1">{(editedProperty.lotSize || 0).toLocaleString()} sqft</p>
-              </div>
+            <div className="bg-gray-50 p-3 rounded">
+              <p className="text-xs text-gray-600">Beds / Baths</p>
+              <p className="text-lg font-semibold text-gray-900">
+                {property.bedrooms} / {property.bathrooms}
+              </p>
+            </div>
+            <div className="bg-gray-50 p-3 rounded">
+              <p className="text-xs text-gray-600">Square Feet</p>
+              <p className="text-lg font-semibold text-gray-900">
+                {property.sqft?.toLocaleString() || 'N/A'}
+              </p>
+            </div>
+            <div className="bg-gray-50 p-3 rounded">
+              <p className="text-xs text-gray-600">Lot Size</p>
+              <p className="text-lg font-semibold text-gray-900">
+                {lotSizeAcres} acres
+              </p>
             </div>
           </div>
 
@@ -441,11 +393,8 @@ export default function PortfolioPage() {
     const mortgageBalance = prop.user_mortgage_data?.mortgage_balance || 0;
     return sum + ((prop.property_data.price || 0) - mortgageBalance);
   }, 0);
-  
-  // ONLY calculate rental income/expenses from rental properties (exclude primary residence)
-  const rentalProperties = realProperties.filter(p => p.property_type === 'rental');
-  const monthlyRentalIncome = rentalProperties.reduce((sum, prop) => sum + (prop.user_mortgage_data?.monthly_rent || 0), 0);
-  const monthlyRentalExpenses = rentalProperties.reduce((sum, prop) => sum + (prop.user_mortgage_data?.monthly_payment || 0), 0);
+  const monthlyRentalIncome = realProperties.reduce((sum, prop) => sum + (prop.user_mortgage_data?.monthly_rent || 0), 0);
+  const monthlyRentalExpenses = realProperties.reduce((sum, prop) => sum + (prop.user_mortgage_data?.monthly_payment || 0), 0);
 
   const handleAddFromZillow = async () => {
     if (!zillowUrl.trim()) return;
@@ -490,23 +439,12 @@ export default function PortfolioPage() {
     }
   };
 
-  const handleConfirmProperty = async (
-    propertyType: 'primary' | 'rental', 
-    financialData?: FinancialData,
-    editedPropertyData?: Partial<ZillowPropertyData>
-  ) => {
+  const handleConfirmProperty = async (propertyType: 'primary' | 'rental', financialData?: FinancialData) => {
     if (!scrapedProperty) return;
 
     try {
       console.log('Saving property to database as:', propertyType);
       console.log('Financial data:', financialData);
-      console.log('Edited property data:', editedPropertyData);
-
-      // Merge edited property data with scraped data
-      const finalPropertyData = {
-        ...scrapedProperty,
-        ...editedPropertyData  // Override with edited values
-      };
 
       // Prepare mortgage data for database
       const mortgageData = financialData ? {
@@ -524,7 +462,7 @@ export default function PortfolioPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          property: finalPropertyData,  // Use merged data
+          property: scrapedProperty,
           propertyType,
           mortgageData,
           userId: 'christian_molnar' // TODO: Get from user authentication
@@ -656,310 +594,91 @@ export default function PortfolioPage() {
               <p className="text-text-secondary">Loading your properties...</p>
             </div>
           ) : realProperties.length > 0 ? (
-            <>
-              {/* Primary Residence Section */}
-              {realProperties.some(p => p.property_type === 'primary') && (
-                <div>
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-semibold text-text-primary">Primary Residence</h3>
-                    {!showAddProperty && (
-                      <button 
-                        onClick={() => setShowAddProperty(true)}
-                        className="btn-primary"
-                      >
-                        + New Property
-                      </button>
-                    )}
-                  </div>
-                  <div className="space-y-6">
-                    {realProperties
-                      .filter(p => p.property_type === 'primary')
-                      .map((propertyRecord) => {
-                        const property = propertyRecord.property_data;
-                        return (
-                          <div key={propertyRecord.id} className="domain-card">
-                            <div className="flex justify-between items-start mb-4">
-                              <div className="flex-1">
-                                <h4 className="domain-title-small">{property.address}</h4>
-                                <p className="text-sm text-text-secondary">
-                                  {property.city}, {property.state} {property.zipCode}
-                                </p>
-                              </div>
-                              {/* Property Image */}
-                              <div className="ml-4 relative">
-                                {property.photos && property.photos.length > 0 ? (
-                                  <div className="w-32 h-24 rounded-lg overflow-hidden">
-                                    <img 
-                                      src={property.photos[0]} 
-                                      alt="Property" 
-                                      className="w-full h-full object-cover"
-                                      onError={(e) => {
-                                        // Hide image if it fails to load
-                                        e.currentTarget.style.display = 'none';
-                                      }}
-                                    />
-                                  </div>
-                                ) : (
-                                  <div className="w-32 h-24 rounded-lg bg-gray-700 flex items-center justify-center">
-                                    <span className="text-xs text-gray-500">No Image</span>
-                                  </div>
-                                )}
-                                <button
-                                  onClick={() => {
-                                    // Create a hidden file input
-                                    const input = document.createElement('input');
-                                    input.type = 'file';
-                                    input.accept = 'image/*';
-                                    input.onchange = async (e) => {
-                                      const file = (e.target as HTMLInputElement).files?.[0];
-                                      if (!file) return;
-
-                                      // Check file size (max 5MB)
-                                      if (file.size > 5 * 1024 * 1024) {
-                                        alert('File is too large. Maximum size is 5MB.');
-                                        return;
-                                      }
-
-                                      try {
-                                        const formData = new FormData();
-                                        formData.append('propertyId', propertyRecord.id);
-                                        formData.append('file', file);
-
-                                        const response = await fetch('/api/properties/upload-photo', {
-                                          method: 'POST',
-                                          body: formData
-                                        });
-
-                                        if (!response.ok) throw new Error('Upload failed');
-
-                                        await fetchProperties();
-                                        alert('Photo added successfully!');
-                                      } catch (err) {
-                                        alert('Failed to add photo: ' + (err as Error).message);
-                                      }
-                                    };
-                                    input.click();
-                                  }}
-                                  className="mt-1 text-xs text-blue-400 hover:text-blue-300"
-                                >
-                                  {property.photos && property.photos.length > 0 ? 'Change Photo' : '+ Add Photo'}
-                                </button>
-                              </div>
-                            </div>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                              <div>
-                                <h5 className="font-semibold text-text-primary mb-2">Property Details</h5>
-                                <div className="space-y-1 text-sm">
-                                  <p><span className="text-text-secondary">Type:</span> {property.propertyType}</p>
-                                  <p><span className="text-text-secondary">Size:</span> {property.bedrooms}br/{property.bathrooms}ba</p>
-                                  <p><span className="text-text-secondary">Square Feet:</span> {property.sqft?.toLocaleString()} sqft</p>
-                                  <p><span className="text-text-secondary">Lot Size:</span> {(property.lotSize / 43560).toFixed(2)} acres</p>
-                                  <p><span className="text-text-secondary">Year Built:</span> {property.yearBuilt}</p>
-                                </div>
-                              </div>
-                              
-                              <div>
-                                <h5 className="font-semibold text-text-primary mb-2">Financial Details</h5>
-                                <div className="space-y-1 text-sm">
-                                  <p><span className="text-text-secondary">Current Value:</span> <span className="text-accent-primary font-semibold">${property.price?.toLocaleString()}</span></p>
-                                  <p><span className="text-text-secondary">Zestimate:</span> ${property.zestimate?.toLocaleString()}</p>
-                                  {propertyRecord.user_mortgage_data && (
-                                    <>
-                                      {propertyRecord.user_mortgage_data.purchase_price && (
-                                        <p><span className="text-text-secondary">Purchase Price:</span> ${propertyRecord.user_mortgage_data.purchase_price.toLocaleString()}</p>
-                                      )}
-                                      {propertyRecord.user_mortgage_data.mortgage_balance && (
-                                        <p><span className="text-text-secondary">Mortgage Balance:</span> ${propertyRecord.user_mortgage_data.mortgage_balance.toLocaleString()}</p>
-                                      )}
-                                      {propertyRecord.user_mortgage_data.monthly_payment && (
-                                        <p><span className="text-text-secondary">Monthly Payment:</span> ${propertyRecord.user_mortgage_data.monthly_payment.toLocaleString()}</p>
-                                      )}
-                                    </>
-                                  )}
-                                </div>
-                              </div>
-                              
-                              <div>
-                                <h5 className="font-semibold text-text-primary mb-2">Details</h5>
-                                <div className="space-y-1 text-sm">
-                                  <p><span className="text-text-secondary">Added:</span> {new Date(propertyRecord.created_at).toLocaleDateString()}</p>
-                                  <p><span className="text-text-secondary">Updated:</span> {new Date(propertyRecord.updated_at).toLocaleDateString()}</p>
-                                </div>
-                                {property.features && property.features.length > 0 && (
-                                  <div className="mt-3">
-                                    <p className="text-text-secondary text-xs mb-1">Features:</p>
-                                    <div className="flex flex-wrap gap-1">
-                                      {property.features.slice(0, 5).map((feature: string, idx: number) => (
-                                        <span key={idx} className="text-xs px-2 py-1 bg-gray-700 rounded">
-                                          {feature}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-semibold text-text-primary">Your Properties</h3>
+                {!showAddProperty && (
+                  <button 
+                    onClick={() => setShowAddProperty(true)}
+                    className="btn-primary"
+                  >
+                    + New Property
+                  </button>
+                )}
+              </div>
+              <div className="space-y-6">
+                {realProperties.map((propertyRecord) => {
+                  const property = propertyRecord.property_data;
+                  return (
+                    <div key={propertyRecord.id} className="domain-card">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h4 className="domain-title-small">{property.address}</h4>
+                          <p className="text-sm text-text-secondary">
+                            {property.city}, {property.state} {property.zipCode}
+                          </p>
+                        </div>
+                        <div className="domain-badge active">From Database</div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                          <h5 className="font-semibold text-text-primary mb-2">Property Details</h5>
+                          <div className="space-y-1 text-sm">
+                            <p><span className="text-text-secondary">Type:</span> {property.propertyType}</p>
+                            <p><span className="text-text-secondary">Size:</span> {property.bedrooms}br/{property.bathrooms}ba</p>
+                            <p><span className="text-text-secondary">Square Feet:</span> {property.sqft?.toLocaleString()} sqft</p>
+                            <p><span className="text-text-secondary">Lot Size:</span> {(property.lotSize / 43560).toFixed(2)} acres</p>
+                            <p><span className="text-text-secondary">Year Built:</span> {property.yearBuilt}</p>
                           </div>
-                        );
-                      })}
-                  </div>
-                </div>
-              )}
-
-              {/* Rental Properties Section */}
-              {realProperties.some(p => p.property_type === 'rental') && (
-                <div className="mt-8">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-semibold text-text-primary">Rental Properties</h3>
-                    {!showAddProperty && !realProperties.some(p => p.property_type === 'primary') && (
-                      <button 
-                        onClick={() => setShowAddProperty(true)}
-                        className="btn-primary"
-                      >
-                        + New Property
-                      </button>
-                    )}
-                  </div>
-                  <div className="space-y-6">
-                    {realProperties
-                      .filter(p => p.property_type === 'rental')
-                      .map((propertyRecord) => {
-                        const property = propertyRecord.property_data;
-                        return (
-                          <div key={propertyRecord.id} className="domain-card">
-                            <div className="flex justify-between items-start mb-4">
-                              <div className="flex-1">
-                                <h4 className="domain-title-small">{property.address}</h4>
-                                <p className="text-sm text-text-secondary">
-                                  {property.city}, {property.state} {property.zipCode}
-                                </p>
-                              </div>
-                              {/* Property Image */}
-                              <div className="ml-4 relative">
-                                {property.photos && property.photos.length > 0 ? (
-                                  <div className="w-32 h-24 rounded-lg overflow-hidden">
-                                    <img 
-                                      src={property.photos[0]} 
-                                      alt="Property" 
-                                      className="w-full h-full object-cover"
-                                      onError={(e) => {
-                                        // Hide image if it fails to load
-                                        e.currentTarget.style.display = 'none';
-                                      }}
-                                    />
-                                  </div>
-                                ) : (
-                                  <div className="w-32 h-24 rounded-lg bg-gray-700 flex items-center justify-center">
-                                    <span className="text-xs text-gray-500">No Image</span>
-                                  </div>
+                        </div>
+                        
+                        <div>
+                          <h5 className="font-semibold text-text-primary mb-2">Financial Details</h5>
+                          <div className="space-y-1 text-sm">
+                            <p><span className="text-text-secondary">Current Value:</span> <span className="text-accent-primary font-semibold">${property.price?.toLocaleString()}</span></p>
+                            <p><span className="text-text-secondary">Zestimate:</span> ${property.zestimate?.toLocaleString()}</p>
+                            {propertyRecord.user_mortgage_data && (
+                              <>
+                                {propertyRecord.user_mortgage_data.purchase_price && (
+                                  <p><span className="text-text-secondary">Purchase Price:</span> ${propertyRecord.user_mortgage_data.purchase_price.toLocaleString()}</p>
                                 )}
-                                <button
-                                  onClick={() => {
-                                    // Create a hidden file input
-                                    const input = document.createElement('input');
-                                    input.type = 'file';
-                                    input.accept = 'image/*';
-                                    input.onchange = async (e) => {
-                                      const file = (e.target as HTMLInputElement).files?.[0];
-                                      if (!file) return;
-
-                                      // Check file size (max 5MB)
-                                      if (file.size > 5 * 1024 * 1024) {
-                                        alert('File is too large. Maximum size is 5MB.');
-                                        return;
-                                      }
-
-                                      try {
-                                        const formData = new FormData();
-                                        formData.append('propertyId', propertyRecord.id);
-                                        formData.append('file', file);
-
-                                        const response = await fetch('/api/properties/upload-photo', {
-                                          method: 'POST',
-                                          body: formData
-                                        });
-
-                                        if (!response.ok) throw new Error('Upload failed');
-
-                                        await fetchProperties();
-                                        alert('Photo added successfully!');
-                                      } catch (err) {
-                                        alert('Failed to add photo: ' + (err as Error).message);
-                                      }
-                                    };
-                                    input.click();
-                                  }}
-                                  className="mt-1 text-xs text-blue-400 hover:text-blue-300"
-                                >
-                                  {property.photos && property.photos.length > 0 ? 'Change Photo' : '+ Add Photo'}
-                                </button>
-                              </div>
-                            </div>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                              <div>
-                                <h5 className="font-semibold text-text-primary mb-2">Property Details</h5>
-                                <div className="space-y-1 text-sm">
-                                  <p><span className="text-text-secondary">Type:</span> {property.propertyType}</p>
-                                  <p><span className="text-text-secondary">Size:</span> {property.bedrooms}br/{property.bathrooms}ba</p>
-                                  <p><span className="text-text-secondary">Square Feet:</span> {property.sqft?.toLocaleString()} sqft</p>
-                                  <p><span className="text-text-secondary">Lot Size:</span> {(property.lotSize / 43560).toFixed(2)} acres</p>
-                                  <p><span className="text-text-secondary">Year Built:</span> {property.yearBuilt}</p>
-                                </div>
-                              </div>
-                              
-                              <div>
-                                <h5 className="font-semibold text-text-primary mb-2">Financial Details</h5>
-                                <div className="space-y-1 text-sm">
-                                  <p><span className="text-text-secondary">Current Value:</span> <span className="text-accent-primary font-semibold">${property.price?.toLocaleString()}</span></p>
-                                  <p><span className="text-text-secondary">Zestimate:</span> ${property.zestimate?.toLocaleString()}</p>
-                                  {propertyRecord.user_mortgage_data && (
-                                    <>
-                                      {propertyRecord.user_mortgage_data.purchase_price && (
-                                        <p><span className="text-text-secondary">Purchase Price:</span> ${propertyRecord.user_mortgage_data.purchase_price.toLocaleString()}</p>
-                                      )}
-                                      {propertyRecord.user_mortgage_data.mortgage_balance && (
-                                        <p><span className="text-text-secondary">Mortgage Balance:</span> ${propertyRecord.user_mortgage_data.mortgage_balance.toLocaleString()}</p>
-                                      )}
-                                      {propertyRecord.user_mortgage_data.monthly_payment && (
-                                        <p><span className="text-text-secondary">Monthly Payment:</span> ${propertyRecord.user_mortgage_data.monthly_payment.toLocaleString()}</p>
-                                      )}
-                                      {propertyRecord.user_mortgage_data.monthly_rent && (
-                                        <p><span className="text-text-secondary">Monthly Rent:</span> <span className="text-green-400 font-semibold">${propertyRecord.user_mortgage_data.monthly_rent.toLocaleString()}</span></p>
-                                      )}
-                                    </>
-                                  )}
-                                </div>
-                              </div>
-                              
-                              <div>
-                                <h5 className="font-semibold text-text-primary mb-2">Details</h5>
-                                <div className="space-y-1 text-sm">
-                                  <p><span className="text-text-secondary">Added:</span> {new Date(propertyRecord.created_at).toLocaleDateString()}</p>
-                                  <p><span className="text-text-secondary">Updated:</span> {new Date(propertyRecord.updated_at).toLocaleDateString()}</p>
-                                </div>
-                                {property.features && property.features.length > 0 && (
-                                  <div className="mt-3">
-                                    <p className="text-text-secondary text-xs mb-1">Features:</p>
-                                    <div className="flex flex-wrap gap-1">
-                                      {property.features.slice(0, 5).map((feature: string, idx: number) => (
-                                        <span key={idx} className="text-xs px-2 py-1 bg-gray-700 rounded">
-                                          {feature}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  </div>
+                                {propertyRecord.user_mortgage_data.mortgage_balance && (
+                                  <p><span className="text-text-secondary">Mortgage Balance:</span> ${propertyRecord.user_mortgage_data.mortgage_balance.toLocaleString()}</p>
                                 )}
-                              </div>
-                            </div>
+                                {propertyRecord.user_mortgage_data.monthly_payment && (
+                                  <p><span className="text-text-secondary">Monthly Payment:</span> ${propertyRecord.user_mortgage_data.monthly_payment.toLocaleString()}</p>
+                                )}
+                              </>
+                            )}
                           </div>
-                        );
-                      })}
-                  </div>
-                </div>
-              )}
-            </>
+                        </div>
+                        
+                        <div>
+                          <h5 className="font-semibold text-text-primary mb-2">Details</h5>
+                          <div className="space-y-1 text-sm">
+                            <p><span className="text-text-secondary">Added:</span> {new Date(propertyRecord.created_at).toLocaleDateString()}</p>
+                            <p><span className="text-text-secondary">Updated:</span> {new Date(propertyRecord.updated_at).toLocaleDateString()}</p>
+                          </div>
+                          {property.features && property.features.length > 0 && (
+                            <div className="mt-3">
+                              <p className="text-text-secondary text-xs mb-1">Features:</p>
+                              <div className="flex flex-wrap gap-1">
+                                {property.features.slice(0, 5).map((feature: string, idx: number) => (
+                                  <span key={idx} className="text-xs px-2 py-1 bg-gray-700 rounded">
+                                    {feature}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           ) : null}
 
           {/* Sample/Hardcoded Properties - Show only if no real properties */}

@@ -8,7 +8,6 @@ export interface PropertyRecord {
   user_id: string;
   zpid: string;
   zillow_url: string;
-  property_type: 'primary' | 'rental';
   property_data: ZillowPropertyData;
   user_mortgage_data?: {
     mortgage_balance: number;
@@ -70,7 +69,6 @@ class DatabaseManager {
   static async saveProperty(
     userId: string, 
     zillowData: ZillowPropertyData, 
-    propertyType: 'primary' | 'rental' = 'rental',
     userMortgageData?: any
   ): Promise<PropertyRecord> {
     try {
@@ -121,7 +119,6 @@ class DatabaseManager {
           user_id: row.user_id,
           zpid: row.zpid,
           zillow_url: row.zillow_url,
-          property_type: row.property_type || propertyType,
           property_data: row.property_data,
           user_mortgage_data: row.user_mortgage_data,
           created_at: row.created_at,
@@ -135,21 +132,19 @@ class DatabaseManager {
       console.log('Creating new property in Railway database:', {
         property_id: propertyId,
         address: zillowData.address,
-        zpid: zillowData.zpid,
-        property_type: propertyType
+        zpid: zillowData.zpid
       });
 
       const result = await pool.query(`
         INSERT INTO user_properties 
-        (id, user_id, zpid, zillow_url, property_type, property_data, user_mortgage_data, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        (id, user_id, zpid, zillow_url, property_data, user_mortgage_data, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         RETURNING *
       `, [
         propertyId,
         userId,
         zillowData.zpid || '',
         zillowData.zillowUrl,
-        propertyType,
         JSON.stringify(zillowData),
         userMortgageData ? JSON.stringify(userMortgageData) : null,
         new Date(),
@@ -162,7 +157,6 @@ class DatabaseManager {
         user_id: row.user_id,
         zpid: row.zpid,
         zillow_url: row.zillow_url,
-        property_type: row.property_type,
         property_data: typeof row.property_data === 'string' ? JSON.parse(row.property_data) : row.property_data,
         user_mortgage_data: row.user_mortgage_data ? 
           (typeof row.user_mortgage_data === 'string' ? JSON.parse(row.user_mortgage_data) : row.user_mortgage_data) : undefined,
@@ -195,7 +189,6 @@ class DatabaseManager {
         user_id: row.user_id,
         zpid: row.zpid,
         zillow_url: row.zillow_url,
-        property_type: row.property_type || 'rental',
         property_data: typeof row.property_data === 'string' ? JSON.parse(row.property_data) : row.property_data,
         user_mortgage_data: row.user_mortgage_data ? 
           (typeof row.user_mortgage_data === 'string' ? JSON.parse(row.user_mortgage_data) : row.user_mortgage_data) : undefined,
@@ -232,7 +225,6 @@ class DatabaseManager {
         user_id: row.user_id,
         zpid: row.zpid,
         zillow_url: row.zillow_url,
-        property_type: row.property_type || 'rental',
         property_data: typeof row.property_data === 'string' ? JSON.parse(row.property_data) : row.property_data,
         user_mortgage_data: row.user_mortgage_data ? 
           (typeof row.user_mortgage_data === 'string' ? JSON.parse(row.user_mortgage_data) : row.user_mortgage_data) : undefined,
@@ -258,7 +250,6 @@ class DatabaseManager {
           user_id VARCHAR(255) NOT NULL,
           zpid VARCHAR(50),
           zillow_url TEXT NOT NULL,
-          property_type VARCHAR(20) NOT NULL DEFAULT 'rental',
           property_data JSONB NOT NULL,
           user_mortgage_data JSONB,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -267,24 +258,6 @@ class DatabaseManager {
         
         CREATE INDEX IF NOT EXISTS idx_user_properties_user_id ON user_properties(user_id);
         CREATE INDEX IF NOT EXISTS idx_user_properties_zpid ON user_properties(zpid);
-        CREATE INDEX IF NOT EXISTS idx_user_properties_type ON user_properties(property_type);
-      `);
-
-      // Migration: Add property_type column if it doesn't exist
-      await pool.query(`
-        DO $$ 
-        BEGIN
-          IF NOT EXISTS (
-            SELECT 1 FROM information_schema.columns 
-            WHERE table_name = 'user_properties' 
-            AND column_name = 'property_type'
-          ) THEN
-            ALTER TABLE user_properties 
-            ADD COLUMN property_type VARCHAR(20) NOT NULL DEFAULT 'rental';
-            
-            CREATE INDEX IF NOT EXISTS idx_user_properties_type ON user_properties(property_type);
-          END IF;
-        END $$;
       `);
 
       console.log('✅ Database tables initialized successfully');
@@ -303,7 +276,6 @@ export { DatabaseManager };
 export async function savePropertyFromZillow(
   userId: string,
   zillowData: ZillowPropertyData,
-  propertyType: 'primary' | 'rental' = 'rental',
   mortgageData?: {
     mortgage_balance?: number;
     monthly_payment?: number;
@@ -315,13 +287,12 @@ export async function savePropertyFromZillow(
   }
 ): Promise<PropertyRecord> {
   
-  const property = await DatabaseManager.saveProperty(userId, zillowData, propertyType, mortgageData);
+  const property = await DatabaseManager.saveProperty(userId, zillowData, mortgageData);
   
   console.log('Property saved successfully:', {
     property_id: property.id,
     address: zillowData.address,
     zestimate: zillowData.zestimate,
-    property_type: propertyType,
     user_id: userId
   });
   

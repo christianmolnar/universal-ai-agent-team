@@ -216,7 +216,7 @@ export class BatchAnalysisOrchestrator {
   }
 
   /**
-   * Perform primary analysis using Claude (Universal Methodology Stage 1)
+   * Perform primary analysis using GPT-4 (Universal Methodology Stage 1)
    */
   private async performPrimaryAnalysis(
     propertyData: PropertyData,
@@ -325,7 +325,31 @@ export class BatchAnalysisOrchestrator {
     onProgress?: ProgressCallback,
     data?: any
   ): void {
-    const percentage = Math.round((completed / total) * 100);
+    // Calculate percentage based on completed properties + progress within current property
+    // For in-progress property, use the step progress for that property (not yet counted in completed)
+    let stepProgress = 0;
+    let inProgressCount = 0;
+    
+    if (eventType.includes('scraping')) {
+      stepProgress = 0.1; // 10% through current property
+      inProgressCount = 1;
+    } else if (eventType.includes('analysis')) {
+      stepProgress = 0.4; // 40% through current property
+      inProgressCount = 1;
+    } else if (eventType.includes('quality')) {
+      stepProgress = 0.65; // 65% through current property
+      inProgressCount = 1;
+    } else if (eventType.includes('validation')) {
+      stepProgress = 0.85; // 85% through current property
+      inProgressCount = 1;
+    } else if (eventType.includes('completed')) {
+      stepProgress = 0; // Don't add extra - already counted in completed
+      inProgressCount = 0;
+    }
+
+    // If we're in progress on a property, don't count it in completed yet
+    const actualCompleted = eventType.includes('completed') ? completed : Math.max(0, completed - inProgressCount);
+    const percentage = Math.round(((actualCompleted + stepProgress) / total) * 100);
 
     const update: ProgressUpdate = {
       batchId,

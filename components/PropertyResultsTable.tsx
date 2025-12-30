@@ -183,16 +183,16 @@ export default function PropertyResultsTable({ properties, onPropertyClick }: Pr
                         {/* Property Details */}
                         <div>
                           <h4 className="text-sm font-bold text-[var(--accent-primary)] mb-3">Property Details</h4>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                             {property.property_data?.price && (
                               <div>
-                                <div className="text-xs text-[var(--text-muted)]">Price</div>
+                                <div className="text-xs text-[var(--text-muted)]">List Price</div>
                                 <div className="text-sm font-semibold text-[var(--text-primary)]">
                                   ${property.property_data.price.toLocaleString()}
                                 </div>
                               </div>
                             )}
-                            {property.property_data?.bedrooms && (
+                            {property.property_data?.bedrooms !== undefined && (
                               <div>
                                 <div className="text-xs text-[var(--text-muted)]">Bedrooms</div>
                                 <div className="text-sm font-semibold text-[var(--text-primary)]">
@@ -200,7 +200,7 @@ export default function PropertyResultsTable({ properties, onPropertyClick }: Pr
                                 </div>
                               </div>
                             )}
-                            {property.property_data?.bathrooms && (
+                            {property.property_data?.bathrooms !== undefined && (
                               <div>
                                 <div className="text-xs text-[var(--text-muted)]">Bathrooms</div>
                                 <div className="text-sm font-semibold text-[var(--text-primary)]">
@@ -210,21 +210,125 @@ export default function PropertyResultsTable({ properties, onPropertyClick }: Pr
                             )}
                             {property.property_data?.livingArea && (
                               <div>
-                                <div className="text-xs text-[var(--text-muted)]">Square Feet</div>
+                                <div className="text-xs text-[var(--text-muted)]">Living Area</div>
                                 <div className="text-sm font-semibold text-[var(--text-primary)]">
-                                  {property.property_data.livingArea.toLocaleString()}
+                                  {property.property_data.livingArea.toLocaleString()} sqft
                                 </div>
                               </div>
                             )}
                           </div>
+                          
+                          {/* Estimates Section */}
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-[var(--border-color)]">
+                            <div>
+                              <div className="text-xs text-[var(--text-muted)]">Zillow Zestimate®</div>
+                              <div className="text-sm font-semibold text-[var(--text-primary)]">
+                                {property.property_data?.zestimate 
+                                  ? `$${property.property_data.zestimate.toLocaleString()}`
+                                  : <span className="text-[var(--text-muted)] italic">Not available</span>
+                                }
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-xs text-[var(--text-muted)]">Rent Zestimate®</div>
+                              <div className="text-sm font-semibold text-[var(--text-primary)]">
+                                {property.property_data?.rentZestimate 
+                                  ? `$${property.property_data.rentZestimate.toLocaleString()}/mo`
+                                  : <span className="text-[var(--text-muted)] italic">Not available</span>
+                                }
+                              </div>
+                            </div>
+                            {property.property_data?.yearBuilt && (
+                              <div>
+                                <div className="text-xs text-[var(--text-muted)]">Year Built</div>
+                                <div className="text-sm font-semibold text-[var(--text-primary)]">
+                                  {property.property_data.yearBuilt}
+                                </div>
+                              </div>
+                            )}
+                            {property.property_data?.propertyType && (
+                              <div>
+                                <div className="text-xs text-[var(--text-muted)]">Property Type</div>
+                                <div className="text-sm font-semibold text-[var(--text-primary)]">
+                                  {property.property_data.propertyType}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Market Indicators */}
+                          {(property.property_data?.daysOnMarket || property.property_data?.priceReduction) && (
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-[var(--border-color)]">
+                              {property.property_data?.daysOnMarket !== undefined && (
+                                <div>
+                                  <div className="text-xs text-[var(--text-muted)]">Days on Market</div>
+                                  <div className="text-sm font-semibold text-[var(--text-primary)]">
+                                    {property.property_data.daysOnMarket} days
+                                    {property.property_data.daysOnMarket > 60 && (
+                                      <span className="ml-2 text-xs text-yellow-400">⚠️ Above avg</span>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                              {property.property_data?.priceReduction !== undefined && (
+                                <div>
+                                  <div className="text-xs text-[var(--text-muted)]">Recent Price Cut</div>
+                                  <div className="text-sm font-semibold text-green-400">
+                                    -${property.property_data.priceReduction.toLocaleString()}
+                                    <span className="ml-2 text-xs">💰 Motivated!</span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
 
                         {/* Analysis Summary */}
-                        <div>
+                        <div className="bg-[var(--input-background)] p-4 rounded-lg">
                           <h4 className="text-sm font-bold text-[var(--accent-primary)] mb-3">Analysis Summary</h4>
-                          <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+                          
+                          {/* Recommendation Badge */}
+                          <div className="mb-3">
+                            {getRecommendationBadge(property.recommendation || 'REJECT')}
+                            <span className="ml-3 text-sm text-[var(--text-secondary)]">
+                              Quality Score: <span className={`font-bold ${getScoreColor(property.quality_score || 0)}`}>
+                                {property.quality_score || 0}/100
+                              </span>
+                            </span>
+                          </div>
+                          
+                          {/* Summary Text */}
+                          <div className="text-sm text-[var(--text-secondary)] leading-relaxed whitespace-pre-line">
                             {property.primary_analysis?.analysis.summary || 'No analysis summary available.'}
-                          </p>
+                          </div>
+                          
+                          {/* Seller Motivation Indicators */}
+                          {(property.property_data?.daysOnMarket && property.property_data.daysOnMarket > 60) || property.property_data?.priceReduction ? (
+                            <div className="mt-4 p-3 rounded-lg bg-green-500 bg-opacity-10 border border-green-500">
+                              <p className="text-xs text-green-400">
+                                <strong>💡 Seller Motivation Indicators:</strong>
+                                {property.property_data?.daysOnMarket && property.property_data.daysOnMarket > 60 && (
+                                  <span> Property has been on market for {property.property_data.daysOnMarket} days (above average).</span>
+                                )}
+                                {property.property_data?.priceReduction && (
+                                  <span> Recent price reduction of ${property.property_data.priceReduction.toLocaleString()}.</span>
+                                )}
+                                {' '}This may indicate seller flexibility for negotiations.
+                              </p>
+                            </div>
+                          ) : null}
+                          
+                          {/* Data Availability Notice */}
+                          {(!property.property_data?.zestimate || !property.property_data?.rentZestimate) && (
+                            <div className="mt-4 p-3 rounded-lg bg-yellow-500 bg-opacity-10 border border-yellow-500">
+                              <p className="text-xs text-yellow-400">
+                                ⚠️ <strong>Note:</strong> {!property.property_data?.zestimate && "Zillow Zestimate"} 
+                                {!property.property_data?.zestimate && !property.property_data?.rentZestimate && " and "}
+                                {!property.property_data?.rentZestimate && "Rent Zestimate"} not available for this property. 
+                                Analysis is based on list price and market comparables only.
+                              </p>
+                            </div>
+                          )}
                         </div>
 
                         {/* Key Findings */}

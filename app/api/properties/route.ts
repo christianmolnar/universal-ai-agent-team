@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
       console.log('Saving pre-scraped property data:', { userId, propertyType });
 
       // Save to database with property type
-      const savedProperty = await savePropertyFromZillow(userId, property, propertyType || 'rental', mortgageData);
+      const savedProperty = await savePropertyFromZillow(userId, property, mortgageData);
 
       return NextResponse.json({
         success: true,
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     const metrics = ZillowParser.calculateInvestmentMetrics(zillowData);
 
     // Save to database
-    const savedProperty = await savePropertyFromZillow(userId, zillowData, propertyType || 'rental', mortgageData);
+    const savedProperty = await savePropertyFromZillow(userId, zillowData, mortgageData);
 
     return NextResponse.json({
       success: true,

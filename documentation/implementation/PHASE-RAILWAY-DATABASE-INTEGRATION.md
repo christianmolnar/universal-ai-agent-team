@@ -1,26 +1,13 @@
 # Phase: Railway Database Integration
-**Created**: December 29, 2024
-**Status**: ✅ COMPLETE - Moving to Real Estate Analysis V2
-**Completion Date**: December 29, 2024
+**Created**: December 29, 2025
+**Status**: In Progress
 
 ## Overview
 Connect the property scraping system to Railway PostgreSQL database for persistent storage of portfolio data.
 
----
-
-## ⚠️ PROJECT PIVOT: Real Estate Analysis V2
-
-This phase is **COMPLETE**. The project is now pivoting to a comprehensive Real Estate Analysis system with multi-property batch analysis, AI-powered scoring, and trip planning.
-
-**New Specification**: See `/documentation/planning/REAL-ESTATE-ANALYSIS-SPEC.md`
-
-The current portfolio management system will be **deprecated** and replaced with the new analysis-focused interface.
-
----
-
 ## Current Status
 
-### ✅ Phase Complete - Achievements
+### ✅ Completed
 - [x] Zillow scraper working with Puppeteer + Chrome
 - [x] Address parsing (street, city, state, zip) functioning correctly
 - [x] Data extraction for: price, beds, baths, sqft, lot size, features, photos
@@ -50,70 +37,21 @@ The current portfolio management system will be **deprecated** and replaced with
 - [x] **UI Simplified**: Single "+ New Property" button instead of separate buttons
 - [x] **Duplicate Prevention**: Database checks for existing properties by address
 - [x] **Duplicate Handling**: Updates existing property instead of creating duplicates
-- [x] **Photo Upload System**: File upload with base64 storage (single photo per property)
-- [x] **Property Type Column**: Added property_type column to database schema
-- [x] **Data Correction**: Fixed sqft/lot size parsing bug (was concatenating values)
-- [x] **Editable Confirmation Modal**: User can correct bedrooms, bathrooms, sqft, lot size
-- [x] **Dashboard Real Data**: Dashboard now pulls live data from Railway database
-- [x] **Property Display**: Properties correctly separated by type (Primary vs Rental)
-- [x] **Financial Calculations**: Cash flow excludes primary residence equity
 
-### 🎯 Final Implemented Features
-1. **Portfolio Management**
-   - Add properties via Zillow URL scraping
-   - File upload for property photos (base64 storage, max 5MB)
-   - Single photo per property with replace functionality
-   - Editable fields in confirmation modal (beds, baths, sqft, lot size)
-   - Property type selection (Primary Residence vs Rental)
-   - Duplicate detection by normalized address
-   - Automatic updates for existing properties
+### 🚧 In Progress - Next Steps
+- [x] Test full UI flow: scrape → review modal → save → display ✅
+- [x] Created `/api/properties/get` endpoint to fetch user properties
+- [x] Portfolio page now fetches and displays real database data
+- [x] Properties automatically refresh after adding new ones
+- [ ] Implement property deletion
+- [ ] Implement property editing
+- [ ] Add property type badges (Primary vs Rental)
 
-2. **Database Integration**
-   - Railway PostgreSQL cloud database
-   - user_properties table with JSONB columns
-   - property_type column (VARCHAR(20): 'primary' | 'rental')
-   - Full CRUD operations via API routes
-   - Connection pooling and error handling
-
-3. **Dashboard**
-   - Real-time data from database
-   - Portfolio value and equity calculations
-   - Monthly cash flow (rental income minus expenses)
-   - Separate sections for Primary Residence and Rentals
-   - Property details with financial metrics
-
-### 📋 Features Deprecated (Not Needed for V2)
-- ~~Property deletion~~ - Will be handled in new analysis system
-- ~~Property editing~~ - Will be handled in new analysis system  
-- ~~Property type badges~~ - New UI design renders this obsolete
-- ~~Portfolio dashboard enhancements~~ - Entire dashboard being replaced
-
----
-
-## Transition to Real Estate Analysis V2
-
-### What's Being Kept
-- ✅ Railway database connection and credentials
-- ✅ Zillow scraping functionality (will be enhanced)
-- ✅ Property data schema (will be extended)
-- ✅ Photo storage system
-- ✅ API route patterns
-
-### What's Being Replaced
-- ❌ Current dashboard (`app/page.tsx`)
-- ❌ Portfolio management page (`app/portfolio/page.tsx`)
-- ❌ Simple add-one-property-at-a-time flow
-- ❌ Mock data and static calculations
-
-### What's Being Added
-- ➕ Batch property analysis (multiple URLs at once)
-- ➕ Three-model AI validation system (Claude → Quality Review → Final Validation)
-- ➕ Intelligent scoring (0-100) with detailed breakdowns
-- ➕ Analysis progress modal with real-time updates
-- ➕ Results table with sorting and filtering
-- ➕ PDF report generation with property images
-- ➕ Trip itinerary generator with geographic optimization
-- ➕ Activity integration (restaurants, hikes, pickleball, shopping)
+### 📋 Pending
+- [ ] Test end-to-end flow with real property
+- [ ] Multiple property management
+- [ ] Portfolio dashboard updates after adding properties
+- [ ] Data validation and duplicate prevention
 
 ---
 

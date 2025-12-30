@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "description": "A modular, extensible platform for building domain-specific AI agent teams that deliver professional-grade analysis and documentation across any field.",
   "scripts": {
-    "dev": "next dev",
+    "dev": "node server.js",
     "build": "next build",
-    "start": "next start",
+    "start": "node server.js",
     "lint": "next lint",
     "test": "jest",
     "test:watch": "jest --watch",
