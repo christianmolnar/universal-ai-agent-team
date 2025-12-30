@@ -143,6 +143,34 @@ export default function RealEstatePage() {
       navigation={mockNavigation}
     >
       <div className="p-8">
+        {/* V2 Upgrade Banner */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 bg-gradient-to-r from-[var(--accent-secondary)] to-[var(--accent-primary)] rounded-lg p-4 border-2 border-[var(--accent-primary)]"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <SparklesIcon className="w-6 h-6 text-[var(--background)]" />
+              <div>
+                <h3 className="text-lg font-bold text-[var(--background)]">
+                  Try Real Estate Analysis V2
+                </h3>
+                <p className="text-sm text-[var(--background)] opacity-90">
+                  AI-powered batch analysis • Claude + GPT-4 validation • Real-time progress
+                </p>
+              </div>
+            </div>
+            <a
+              href="/real-estate-v2"
+              className="px-6 py-2 bg-[var(--background)] text-[var(--accent-primary)] rounded-lg font-semibold hover:shadow-lg transition-all flex items-center space-x-2"
+            >
+              <span>Launch V2</span>
+              <ArrowRightIcon className="w-4 h-4" />
+            </a>
+          </div>
+        </motion.div>
+
         {/* Page Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
