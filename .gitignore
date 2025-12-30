@@ -57,3 +57,4 @@ test-output/
 
 # Package lock files (keep yarn.lock, ignore others based on preference)
 package-lock.json
+.vercel
