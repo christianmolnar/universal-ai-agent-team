@@ -7,6 +7,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { Pool } from 'pg';
 import { RealEstateModuleV2 } from '@/src/domains/real-estate-module-v2';
 import { ZillowScraperService } from '@/src/services/zillow-scraper';
+import { AIModelService } from '@/src/services/ai-model-service';
+import { wsProgressManager } from '@/src/services/websocket-progress-manager';
 import {
   AnalysisBatch,
   PropertyAnalysis,
@@ -24,11 +26,13 @@ export class BatchAnalysisOrchestrator {
   private db: Pool;
   private realEstateModule: RealEstateModuleV2;
   private scraperService: ZillowScraperService;
+  private aiService: AIModelService;
 
   constructor(dbPool: Pool) {
     this.db = dbPool;
     this.realEstateModule = new RealEstateModuleV2();
     this.scraperService = new ZillowScraperService();
+    this.aiService = new AIModelService();
   }
 
   /**
@@ -130,7 +134,7 @@ export class BatchAnalysisOrchestrator {
         propertyStatuses.set(propertyId, 'reviewing');
         this.sendProgress(batch.id, propertyId, propertyData.address, completed, request.properties.length, 'quality_review_started', onProgress);
 
-        const qualityReview = await this.performQualityReview(primaryAnalysis);
+        const qualityReview = await this.performQualityReview(primaryAnalysis, propertyData);
 
         // Step 4: Final validation
         propertyStatuses.set(propertyId, 'validating');
@@ -216,32 +220,18 @@ export class BatchAnalysisOrchestrator {
    */
   private async performPrimaryAnalysis(
     propertyData: PropertyData,
-    propertyTypes: 'primary' | 'rental' | 'both'
+    propertyType: 'primary' | 'rental'
   ): Promise<DomainAnalysisResult> {
-    // Use RealEstateModuleV2 for analysis
-    const request = {
-      id: uuidv4(),
-      domainType: 'real-estate' as const,
-      inputData: {
-        propertyData,
-        analysisType: propertyTypes,
-      },
-    };
-
-    const result = await this.realEstateModule.analyze(request);
-    return result;
+    // Use AIModelService for Claude-powered analysis
+    return await this.aiService.analyzePrimaryWithClaude(propertyData, propertyType);
   }
 
   /**
    * Perform quality review using GPT-4 (Universal Methodology Stage 2)
    */
-  private async performQualityReview(primaryAnalysis: DomainAnalysisResult): Promise<any> {
-    // Placeholder - will be implemented with actual GPT-4 validation in Phase 4
-    return {
-      quality_score: primaryAnalysis.qualityScore,
-      issues: [],
-      validated_at: new Date(),
-    };
+  private async performQualityReview(primaryAnalysis: DomainAnalysisResult, propertyData: PropertyData): Promise<any> {
+    // Use AIModelService for GPT-4 quality review
+    return await this.aiService.reviewQualityWithGPT4(propertyData, primaryAnalysis);
   }
 
   /**
@@ -251,8 +241,28 @@ export class BatchAnalysisOrchestrator {
     primaryAnalysis: DomainAnalysisResult,
     qualityReview: any
   ): Promise<DomainAnalysisResult> {
-    // Placeholder - will be implemented with final validation logic in Phase 4
-    return primaryAnalysis;
+    // Apply quality review adjustments
+    let finalScore = primaryAnalysis.qualityScore;
+    let finalRecommendation = primaryAnalysis.recommendation;
+
+    // Adjust score based on quality review
+    if (qualityReview.overallAssessment === 'REJECTED') {
+      finalScore = Math.min(finalScore, 50);
+      finalRecommendation = 'REJECT';
+    } else if (qualityReview.overallAssessment === 'CONCERNS') {
+      // Reduce score by 10% for concerns
+      finalScore = Math.round(finalScore * 0.9);
+      if (finalScore < 60) finalRecommendation = 'REJECT';
+      else if (finalScore < 80) finalRecommendation = 'CAUTION';
+    }
+
+    // Return adjusted analysis
+    return {
+      ...primaryAnalysis,
+      qualityScore: finalScore,
+      recommendation: finalRecommendation,
+      confidence: Math.round((primaryAnalysis.confidence + qualityReview.confidenceScore * 100) / 2),
+    };
   }
 
   /**
@@ -331,7 +341,11 @@ export class BatchAnalysisOrchestrator {
       },
     };
 
+    // Send via callback (for local testing)
     onProgress?.(update);
+
+    // Send via WebSocket (for real-time UI updates)
+    wsProgressManager.sendProgressUpdate(batchId, update);
   }
 
   /**
