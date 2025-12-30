@@ -248,9 +248,8 @@ export default function RealEstateAnalysisV2Page() {
    */
   const handleStopAfterCurrent = () => {
     setShouldStopAfterCurrent(true);
-    if (wsRef.current) {
-      wsRef.current.close();
-    }
+    // Don't close WebSocket - let it finish current property and receive final update
+    // The backend will send batch_completed event when done
   };
 
   /**
@@ -259,9 +258,13 @@ export default function RealEstateAnalysisV2Page() {
   const handleCancelAnalysis = () => {
     setShouldStopAfterCurrent(true);
     setIsAnalyzing(false);
+    
+    // Close WebSocket for immediate cancel
     if (wsRef.current) {
       wsRef.current.close();
     }
+    
+    // Fetch partial results
     if (currentBatchId) {
       fetchResults(currentBatchId);
     }

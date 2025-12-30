@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -9,6 +10,29 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Handle responsive behavior
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  const handleToggle = () => {
+    if (isMobile) {
+      setIsMobileMenuOpen(!isMobileMenuOpen);
+    } else {
+      setIsSidebarOpen(!isSidebarOpen);
+    }
+  };
   
   const navigation = [
     {
@@ -21,7 +45,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     {
       title: 'Analysis Domains',
       items: [
-        { label: 'Real Estate', href: '/real-estate-v2', icon: '🏘️', badge: 'Active' },
+        { label: 'Real Estate', href: '/real-estate', icon: '🏘️', badge: 'Active' },
         { label: 'Business Analysis', href: '/business', icon: '💼', badge: 'Development' },
         { label: 'Research Platform', href: '/research', icon: '🔬', badge: 'Development' },
         { label: 'Financial Analysis', href: '/financial', icon: '📈', badge: 'Development' },
@@ -32,8 +56,48 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="dashboard-layout">
+      {/* Hamburger Button */}
+      <button
+        onClick={handleToggle}
+        className="hamburger-button"
+        aria-label="Toggle navigation"
+      >
+        <svg
+          className="hamburger-icon"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          {(isSidebarOpen && !isMobile) || (isMobileMenuOpen && isMobile) ? (
+            // X icon when open
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          ) : (
+            // Hamburger icon when closed
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 6h16M4 12h16M4 18h16"
+            />
+          )}
+        </svg>
+      </button>
+
+      {/* Mobile Overlay */}
+      {isMobileMenuOpen && (
+        <div
+          className="mobile-overlay"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Left Navigation */}
-      <aside className="left-nav">
+      <aside className={`left-nav ${isSidebarOpen ? 'open' : 'collapsed'} ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
         <div className="left-nav-content">
           {/* Brand */}
           <div className="nav-brand">
@@ -68,19 +132,19 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       </aside>
 
       {/* Main Content */}
-      <main className="main-content">
+      <main className={`main-content ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
         <header className="main-header">
           <div className="header-content">
             <div>
               <h1 className="page-title">
                 {pathname === '/' && 'Dashboard'}
-                {pathname === '/real-estate-v2' && 'Real Estate Analysis'}
+                {pathname === '/real-estate' && 'Real Estate Analysis'}
                 {pathname === '/config' && 'Configuration'}
                 {pathname === '/portfolio' && 'Current Portfolio'}
               </h1>
               <p className="page-subtitle">
                 {pathname === '/' && 'Overview of your analysis platform and portfolio'}
-                {pathname === '/real-estate-v2' && 'Property evaluation with proven methodology'}
+                {pathname === '/real-estate' && 'Property evaluation with proven methodology'}
                 {pathname === '/config' && 'Configure your analysis preferences'}
                 {pathname === '/portfolio' && 'Manage your property investments'}
               </p>

@@ -51,6 +51,45 @@ body {
 .dashboard-layout {
   display: flex;
   min-height: 100vh;
+  position: relative;
+}
+
+/* Hamburger Button */
+.hamburger-button {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 1000;
+  width: 2.5rem;
+  height: 2.5rem;
+  background-color: var(--card-background);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.hamburger-button:hover {
+  background-color: var(--hover-background);
+  border-color: var(--accent-primary);
+}
+
+.hamburger-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--text-primary);
+}
+
+/* Mobile Overlay */
+.mobile-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999;
 }
 
 .left-nav {
@@ -58,6 +97,58 @@ body {
   background-color: var(--card-background);
   border-right: 1px solid var(--border-color);
   flex-shrink: 0;
+  transition: transform 0.3s ease, width 0.3s ease;
+}
+
+/* Desktop collapsed state */
+.left-nav.collapsed {
+  transform: translateX(-280px);
+  width: 0;
+}
+
+/* Mobile: Hidden by default */
+@media (max-width: 767px) {
+  .hamburger-button {
+    display: flex;
+  }
+
+  .left-nav {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    z-index: 1000;
+    transform: translateX(-100%);
+    width: 280px;
+  }
+
+  .left-nav.mobile-open {
+    transform: translateX(0);
+  }
+
+  .mobile-overlay {
+    display: block;
+  }
+
+  .main-content {
+    margin-left: 0;
+  }
+
+  .main-content.sidebar-open {
+    margin-left: 0;
+  }
+}
+
+/* Desktop: Adjust main content based on sidebar state */
+@media (min-width: 768px) {
+  .main-content {
+    margin-left: 280px;
+    transition: margin-left 0.3s ease;
+  }
+
+  .main-content.sidebar-collapsed {
+    margin-left: 0;
+  }
 }
 
 .left-nav-content {
@@ -126,25 +217,6 @@ body {
   font-size: 0.75rem;
   font-weight: 600;
   border-radius: 0.25rem;
-}
-
-/* Custom Scrollbar Styles */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 8px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: var(--input-background);
-  border-radius: 4px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: 4px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-primary);
 }
 
 .main-content {
@@ -623,18 +695,10 @@ body {
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .dashboard-layout {
-    flex-direction: column;
-  }
-  
+  /* Keep left nav visible on mobile - just make it narrower */
   .left-nav {
-    width: 100%;
-    height: auto;
-  }
-  
-  .left-nav-content {
-    height: auto;
-    max-height: none;
+    width: 240px;
+    /* Remove the full-width behavior */
   }
   
   .main-header {
@@ -649,5 +713,19 @@ body {
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
+  }
+  
+  /* Make nav text slightly smaller on mobile */
+  .nav-brand h1 {
+    font-size: 1rem;
+  }
+  
+  .nav-brand p {
+    font-size: 0.75rem;
+  }
+  
+  .nav-item {
+    font-size: 0.875rem;
+    padding: 0.625rem 0.75rem;
   }
 }
