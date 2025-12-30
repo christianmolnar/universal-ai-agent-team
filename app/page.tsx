@@ -1,185 +1,219 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
+import { DashboardLayout } from '@/components/DashboardLayout';
+import Link from 'next/link';
+import { useState, useEffect } from 'react';
 
-export default function UniversalAIPlatform() {
-  const [selectedDomain, setSelectedDomain] = useState<string | null>(null)
-  const [analysisHistory] = useState([
-    {
-      id: 'h06-redbird',
-      title: 'H06 Redbird Lane Analysis', 
-      domain: 'Real Estate',
-      score: 92.3,
-      status: 'PURCHASED',
-      price: '$875,000',
-      date: '2025-12-29'
-    },
-    {
-      id: 'h07-139th',
-      title: 'H07 139th Street Analysis',
-      domain: 'Real Estate', 
-      score: 83.0,
-      status: 'PASSED',
-      price: '$825,000',
-      date: '2025-12-29'
+export default function Home() {
+  const [realProperties, setRealProperties] = useState<any[]>([]);
+  const [isLoadingProperties, setIsLoadingProperties] = useState(true);
+
+  // Fetch properties from database on mount
+  useEffect(() => {
+    fetchProperties();
+  }, []);
+
+  const fetchProperties = async () => {
+    try {
+      setIsLoadingProperties(true);
+      const response = await fetch('/api/properties/get?userId=christian_molnar');
+      const result = await response.json();
+      
+      if (result.success) {
+        setRealProperties(result.properties);
+        console.log('Loaded properties from database:', result.properties);
+      }
+    } catch (error) {
+      console.error('Error fetching properties:', error);
+    } finally {
+      setIsLoadingProperties(false);
     }
-  ])
+  };
 
-  const domains = [
-    {
-      id: 'real-estate',
-      name: 'Real Estate Analysis',
-      description: 'Property analysis with your proven methodology',
-      status: 'ACTIVE',
-      analyses: 2,
-      avgScore: 87.8
-    },
-    {
-      id: 'business',
-      name: 'Business Intelligence', 
-      description: 'Business opportunity analysis',
-      status: 'COMING SOON',
-      analyses: 0,
-      avgScore: 0
-    },
-    {
-      id: 'research',
-      name: 'Research & Development',
-      description: 'Advanced research analysis',
-      status: 'COMING SOON', 
-      analyses: 0,
-      avgScore: 0
-    }
-  ]
+  // Calculate portfolio metrics from real properties
+  const totalPortfolioValue = realProperties.reduce((sum, prop) => sum + (prop.property_data.price || 0), 0);
+  const totalEquity = realProperties.reduce((sum, prop) => {
+    const mortgageBalance = prop.user_mortgage_data?.mortgage_balance || 0;
+    return sum + ((prop.property_data.price || 0) - mortgageBalance);
+  }, 0);
+  
+  // ONLY calculate rental income/expenses from rental properties (exclude primary residence)
+  const rentalProperties = realProperties.filter(p => p.property_type === 'rental');
+  const primaryResidence = realProperties.find(p => p.property_type === 'primary');
+  
+  const monthlyRentalIncome = rentalProperties.reduce((sum, prop) => sum + (prop.user_mortgage_data?.monthly_rent || 0), 0);
+  const monthlyRentalExpenses = rentalProperties.reduce((sum, prop) => sum + (prop.user_mortgage_data?.monthly_payment || 0), 0);
+  const netMonthlyIncome = monthlyRentalIncome - monthlyRentalExpenses;
+
+  // Primary residence calculations
+  const primaryEquity = primaryResidence 
+    ? (primaryResidence.property_data.price || 0) - (primaryResidence.user_mortgage_data?.mortgage_balance || 0)
+    : 0;
+  const primaryAppreciation = primaryResidence && primaryResidence.user_mortgage_data?.purchase_price
+    ? (primaryResidence.property_data.price || 0) - primaryResidence.user_mortgage_data.purchase_price
+    : 0;
+  const primaryROI = primaryResidence && primaryResidence.user_mortgage_data?.purchase_price
+    ? (primaryAppreciation / primaryResidence.user_mortgage_data.purchase_price * 100)
+    : 0;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Universal AI Agent Team Platform</h1>
-              <p className="text-gray-600">Professional analysis with 85+ quality gates</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
-                <div className="text-sm text-gray-500">Quality Score</div>
-                <div className="text-lg font-semibold text-green-600">87.8/100</div>
+    <DashboardLayout>
+      {/* Portfolio Summary Stats */}
+      <section className="mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="stat-card">
+            <h3>Total Portfolio Value</h3>
+            <p className="stat-value">${totalPortfolioValue.toLocaleString()}</p>
+            <span className="stat-label">3 Properties</span>
+          </div>
+          <div className="stat-card">
+            <h3>Total Equity</h3>
+            <p className="stat-value">${totalEquity.toLocaleString()}</p>
+            <span className="stat-label">Current Net Worth</span>
+          </div>
+          <div className="stat-card">
+            <h3>Monthly Rental Income</h3>
+            <p className="stat-value">${monthlyRentalIncome.toLocaleString()}</p>
+            <span className="stat-label">Gross Rental Income</span>
+          </div>
+          <div className="stat-card">
+            <h3>Net Cash Flow</h3>
+            <p className="stat-value text-status-active">${netMonthlyIncome.toLocaleString()}</p>
+            <span className="stat-label">Monthly After Mortgage</span>
+          </div>
+        </div>
+      </section>
+
+      {/* Primary Residence Summary */}
+      <section className="mb-8">
+        <h2 className="section-title">Primary Residence</h2>
+        {isLoadingProperties ? (
+          <div className="domain-card">
+            <p className="text-text-secondary">Loading...</p>
+          </div>
+        ) : primaryResidence ? (
+          <div className="domain-card">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <h3 className="domain-title-small">Property Details</h3>
+                <div className="space-y-2">
+                  <p><strong>Address:</strong> {primaryResidence.property_data.address}</p>
+                  <p><strong>City:</strong> {primaryResidence.property_data.city}, {primaryResidence.property_data.state} {primaryResidence.property_data.zipCode}</p>
+                  <p><strong>Size:</strong> {primaryResidence.property_data.bedrooms}br/{primaryResidence.property_data.bathrooms}ba • {primaryResidence.property_data.sqft?.toLocaleString()} sqft</p>
+                  <p><strong>Lot:</strong> {(primaryResidence.property_data.lotSize / 43560).toFixed(2)} acres</p>
+                  <p><strong>Built:</strong> {primaryResidence.property_data.yearBuilt}</p>
+                  {primaryResidence.property_data.features && primaryResidence.property_data.features.length > 0 && (
+                    <p><strong>Features:</strong> {primaryResidence.property_data.features.slice(0, 5).join(', ')}</p>
+                  )}
+                </div>
+              </div>
+              <div>
+                <h3 className="domain-title-small">Financial Summary</h3>
+                <div className="space-y-2">
+                  <p><strong>Current Value:</strong> <span className="text-accent-primary">${primaryResidence.property_data.price?.toLocaleString()}</span></p>
+                  {primaryResidence.user_mortgage_data?.purchase_price && (
+                    <p><strong>Purchase Price:</strong> ${primaryResidence.user_mortgage_data.purchase_price.toLocaleString()}</p>
+                  )}
+                  {primaryResidence.user_mortgage_data?.mortgage_balance && (
+                    <p><strong>Mortgage Balance:</strong> ${primaryResidence.user_mortgage_data.mortgage_balance.toLocaleString()}</p>
+                  )}
+                  <p><strong>Current Equity:</strong> <span className="text-status-active">${primaryEquity.toLocaleString()}</span></p>
+                  {primaryResidence.user_mortgage_data?.monthly_payment && (
+                    <p><strong>Monthly Payment:</strong> ${primaryResidence.user_mortgage_data.monthly_payment.toLocaleString()}</p>
+                  )}
+                  {primaryResidence.user_mortgage_data?.purchase_date && (
+                    <p><strong>Purchase Date:</strong> {new Date(primaryResidence.user_mortgage_data.purchase_date).toLocaleDateString()}</p>
+                  )}
+                </div>
+              </div>
+              <div>
+                <h3 className="domain-title-small">Performance</h3>
+                <div className="space-y-2">
+                  {primaryResidence.user_mortgage_data?.purchase_price && (
+                    <>
+                      <p><strong>Appreciation:</strong> <span className="text-status-active">${((primaryResidence.property_data.price || 0) - primaryResidence.user_mortgage_data.purchase_price).toLocaleString()}</span></p>
+                      <p><strong>ROI:</strong> <span className="text-status-active">{(((primaryResidence.property_data.price || 0) - primaryResidence.user_mortgage_data.purchase_price) / primaryResidence.user_mortgage_data.purchase_price * 100).toFixed(1)}%</span></p>
+                    </>
+                  )}
+                  {primaryResidence.user_mortgage_data?.purchase_date && (
+                    <p><strong>Years Owned:</strong> {Math.round((new Date().getTime() - new Date(primaryResidence.user_mortgage_data.purchase_date).getTime()) / (365.25 * 24 * 60 * 60 * 1000))}</p>
+                  )}
+                  <p><strong>Added:</strong> {new Date(primaryResidence.created_at).toLocaleDateString()}</p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* Hero Section */}
-        <div className="hero-gradient rounded-2xl p-8 mb-8">
-          <h2 className="text-3xl font-bold mb-4">Welcome to Universal AI Agent Team Platform</h2>
-          <p className="text-xl text-blue-100 mb-6">
-            Your proven real estate methodology has been validated and is ready for any domain.
-          </p>
-          <div className="flex items-center space-x-6">
-            <div className="flex items-center space-x-2">
-              <div className="status-dot status-green"></div>
-              <span>Phase 1B Complete</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="status-dot status-yellow"></div>
-              <span>87.8 Average Score</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="status-dot status-purple"></div>
-              <span>160x AI Efficiency</span>
-            </div>
+        ) : (
+          <div className="domain-card">
+            <p className="text-text-secondary">No primary residence added yet. <Link href="/portfolio" className="text-accent-primary hover:underline">Add one in Portfolio →</Link></p>
           </div>
+        )}
+      </section>
+
+      {/* Rental Properties Summary */}
+      <section className="mb-8">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="section-title mb-0">Rental Properties</h2>
+          <Link href="/portfolio" className="btn-secondary">
+            View All Properties
+          </Link>
         </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Domain Modules */}
-          <div className="lg:col-span-2">
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">Domain Modules</h3>
-            <div className="grid gap-6">
-              {domains.map((domain) => (
-                <div 
-                  key={domain.id}
-                  className={`card card-hover cursor-pointer p-6 ${
-                    selectedDomain === domain.id ? 'card-selected' : ''
-                  }`}
-                  onClick={() => setSelectedDomain(selectedDomain === domain.id ? null : domain.id)}
-                >
-                  <div className="flex items-center justify-between">
+        {isLoadingProperties ? (
+          <div className="domain-card">Loading properties...</div>
+        ) : rentalProperties.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {rentalProperties.map((property) => {
+              const propertyValue = property.property_data.price || 0;
+              const mortgageBalance = property.user_mortgage_data?.mortgageBalance || 0;
+              const equity = propertyValue - mortgageBalance;
+              const monthlyRent = property.user_mortgage_data?.monthlyRentalIncome || 0;
+              const monthlyExpenses = property.user_mortgage_data?.monthlyRentalExpenses || 0;
+              const monthlyProfit = monthlyRent - monthlyExpenses;
+              
+              return (
+                <div key={property.zpid} className="domain-card">
+                  <h3 className="domain-title-small">{property.property_data.address}</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <h4 className="text-lg font-medium text-gray-900">{domain.name}</h4>
-                      <p className="text-gray-600 mt-1">{domain.description}</p>
-                      <div className="flex items-center space-x-4 mt-3">
-                        <span className={`badge ${
-                          domain.status === 'ACTIVE' ? 'badge-green' : 'badge-gray'
-                        }`}>
-                          {domain.status}
-                        </span>
-                        {domain.analyses > 0 && (
-                          <span className="text-sm text-gray-600">
-                            {domain.analyses} analyses
-                          </span>
-                        )}
-                      </div>
+                      <p><strong>City:</strong> {property.property_data.city}, {property.property_data.state}</p>
+                      <p><strong>Size:</strong> {property.property_data.bedrooms}br/{property.property_data.bathrooms}ba • {property.property_data.livingArea?.toLocaleString() || 'N/A'} sqft</p>
+                      <p><strong>Built:</strong> {property.property_data.yearBuilt || 'N/A'}</p>
+                      <p><strong>Lot:</strong> {property.property_data.lotAreaValue ? `${property.property_data.lotAreaValue.toLocaleString()} ${property.property_data.lotAreaUnit || ''}` : 'N/A'}</p>
                     </div>
-                    {domain.avgScore > 0 && (
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-green-600">{domain.avgScore}</div>
-                        <div className="text-sm text-gray-500">Quality Score</div>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {selectedDomain === domain.id && domain.status === 'ACTIVE' && (
-                    <div className="mt-6 pt-6 border-b">
-                      <div className="flex justify-between items-center">
-                        <h5 className="font-medium text-gray-900">Quick Actions</h5>
-                        <button className="btn btn-primary">
-                          New Analysis
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Analysis History */}
-          <div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">Recent Analyses</h3>
-            <div className="space-y-4">
-              {analysisHistory.map((analysis) => (
-                <div key={analysis.id} className="card p-4">
-                  <div className="flex justify-between items-start">
                     <div>
-                      <h4 className="font-medium text-gray-900">{analysis.title}</h4>
-                      <p className="text-sm text-gray-600 mt-1">{analysis.domain}</p>
-                      <p className="text-sm text-gray-500 mt-1">{analysis.date}</p>
+                      <p><strong>Current Value:</strong> <span className="text-accent-primary">${propertyValue.toLocaleString()}</span></p>
+                      <p><strong>Monthly Rent:</strong> <span className="text-status-active">${monthlyRent.toLocaleString()}</span></p>
+                      <p><strong>Monthly Profit:</strong> <span className="text-status-active">${monthlyProfit.toLocaleString()}</span></p>
+                      <p><strong>Equity:</strong> <span className="text-status-active">${equity.toLocaleString()}</span></p>
                     </div>
-                    <div className="text-right">
-                      <div className="text-lg font-semibold text-green-600">{analysis.score}</div>
-                      <div className="text-sm text-gray-500">Score</div>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center mt-3">
-                    <span className={`badge ${
-                      analysis.status === 'PURCHASED' ? 'badge-green' : 'badge-gray'
-                    }`}>
-                      {analysis.status}
-                    </span>
-                    <span className="text-sm font-medium text-gray-900">{analysis.price}</span>
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
+        ) : (
+          <div className="domain-card">No rental properties on file</div>
+        )}
+      </section>
+
+      {/* Quick Actions */}
+      <section>
+        <h2 className="section-title">Quick Actions</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Link href="/portfolio" className="domain-card">
+            <h3 className="domain-title-small">📊 Manage Portfolio</h3>
+            <p className="domain-description">View, edit, and add new properties to your portfolio</p>
+          </Link>
+          <Link href="/real-estate" className="domain-card">
+            <h3 className="domain-title-small">🏘️ Analyze Property</h3>
+            <p className="domain-description">Add a new property from Zillow URL for analysis</p>
+          </Link>
+          <Link href="/config" className="domain-card">
+            <h3 className="domain-title-small">⚙️ Configure Preferences</h3>
+            <p className="domain-description">Set your investment criteria and preferences</p>
+          </Link>
         </div>
-      </main>
-    </div>
-  )
+      </section>
+    </DashboardLayout>
+  );
 }
