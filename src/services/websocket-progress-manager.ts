@@ -67,16 +67,24 @@ export class WebSocketProgressManager {
    * Send progress update to all clients watching a batch
    */
   sendProgressUpdate(batchId: string, update: ProgressUpdate): void {
-    const connections = this.connections.get(batchId);
-    if (!connections || connections.size === 0) {
-      return; // No active connections for this batch
-    }
-
     const message = {
       type: 'progress',
       ...update,
       timestamp: update.timestamp.toISOString(),
     };
+
+    // Use global wsBroadcast function from server.js if available
+    if (typeof global !== 'undefined' && (global as any).wsBroadcast) {
+      (global as any).wsBroadcast(batchId, message);
+      return;
+    }
+
+    // Fallback to local connections (for when wsProgressManager is initialized)
+    const connections = this.connections.get(batchId);
+    if (!connections || connections.size === 0) {
+      console.log(`No WebSocket connections found for batch ${batchId}`);
+      return;
+    }
 
     connections.forEach((ws) => {
       if (ws.readyState === WebSocket.OPEN) {

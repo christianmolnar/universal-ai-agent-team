@@ -345,8 +345,8 @@ export default function RealEstateAnalysisV2Page() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[var(--background)] p-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-[var(--background)]">
+      <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-[var(--text-primary)] mb-2">

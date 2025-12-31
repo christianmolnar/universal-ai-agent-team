@@ -45,7 +45,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     {
       title: 'Analysis Domains',
       items: [
-        { label: 'Real Estate', href: '/real-estate', icon: '🏘️', badge: 'Active' },
+        { label: 'Real Estate', href: '/real-estate-v2', icon: '🏘️', badge: 'Active' },
         { label: 'Business Analysis', href: '/business', icon: '💼', badge: 'Development' },
         { label: 'Research Platform', href: '/research', icon: '🔬', badge: 'Development' },
         { label: 'Financial Analysis', href: '/financial', icon: '📈', badge: 'Development' },
@@ -56,8 +56,37 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="dashboard-layout">
+      {/* Mobile Overlay */}
+      {isMobileMenuOpen && (
+        <div className="mobile-overlay" onClick={() => setIsMobileMenuOpen(false)} />
+      )}
+
       {/* Left Navigation */}
       <aside className={`left-nav ${isSidebarOpen ? 'open' : 'collapsed'} ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
+        {/* Collapsed Hamburger Icon */}
+        {!isMobile && !isSidebarOpen && (
+          <button 
+            className="collapsed-hamburger"
+            onClick={handleToggle}
+            aria-label="Expand navigation"
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+        )}
+        
+        {/* Desktop Collapse Toggle - Right edge of nav, vertically centered */}
+        {!isMobile && isSidebarOpen && (
+          <button 
+            className="nav-collapse-toggle"
+            onClick={handleToggle}
+            aria-label="Collapse navigation"
+          >
+            <span className="chevron">‹</span>
+          </button>
+        )}
+        
         <div className="left-nav-content">
           {/* Brand */}
           <div className="nav-brand">
@@ -95,16 +124,29 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <main className={`main-content ${isSidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
         <header className="main-header">
           <div className="header-content">
+            {/* Mobile Hamburger Button */}
+            {isMobile && (
+              <button 
+                className="mobile-hamburger"
+                onClick={handleToggle}
+                aria-label="Toggle navigation"
+              >
+                <span></span>
+                <span></span>
+                <span></span>
+              </button>
+            )}
+            
             <div>
               <h1 className="page-title">
                 {pathname === '/' && 'Dashboard'}
-                {pathname === '/real-estate' && 'Real Estate Analysis'}
+                {pathname === '/real-estate-v2' && 'Real Estate Analysis'}
                 {pathname === '/config' && 'Configuration'}
                 {pathname === '/portfolio' && 'Current Portfolio'}
               </h1>
               <p className="page-subtitle">
                 {pathname === '/' && 'Overview of your analysis platform and portfolio'}
-                {pathname === '/real-estate' && 'Property evaluation with proven methodology'}
+                {pathname === '/real-estate-v2' && 'Property evaluation with proven methodology'}
                 {pathname === '/config' && 'Configure your analysis preferences'}
                 {pathname === '/portfolio' && 'Manage your property investments'}
               </p>

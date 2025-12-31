@@ -1,6 +1,6 @@
 # Universal AI Agent Team - Implementation Plan and Tracker
 *Central Source of Truth for Development Progress and Timeline*
-*Last Updated: December 30, 2025 @ 9:15 PM PST*
+*Last Updated: December 30, 2025 @ 10:45 PM PST*
 
 ---
 
@@ -27,18 +27,18 @@
 
 ## **PROJECT OVERVIEW**
 
-**Goal:** Build URL-Driven Universal AI Agent Team Platform with Zillow integration, dual-model validation, and portfolio management  
-**Architecture:** Model 1 analyzes → Model 2 validates → Model 1 refines → User reviews  
-**Quality Threshold:** 85/100+ with automatic rollback  
+**Goal:** Build URL-Driven Universal AI Agent Team Platform with Zillow integration, dual-model validation, quality tracking, and portfolio management  
+**Architecture:** Model 1 analyzes → Model 2 validates → Model 1 refines → User reviews → Quality tracked universally  
+**Quality Threshold:** 85/100+ with automatic rollback and comprehensive tracking  
 **Start Date:** December 29, 2025  
 **Development Model:** 160:1 Real-Time Human-to-AI Acceleration (1 human hour = 160 AI hours = 20 AI workdays)  
-**Actual Hours Invested:** ~16 hours human time (equivalent to 2,560 AI hours = 320 AI workdays = 64 AI workweeks)  
+**Actual Hours Invested:** ~17 hours human time (equivalent to 2,720 AI hours = 340 AI workdays = 68 AI workweeks)  
 
 ---
 
 ## **ACTUAL IMPLEMENTATION STATUS**
 
-### **✅ COMPLETED (Hours 1-12 = 1,920 AI-equivalent hours)**
+### **✅ COMPLETED (Hours 1-17 = 2,720 AI-equivalent hours)**
 
 #### **Phase 0: Foundation & Architecture (Hours 1-3)**
 - ✅ Universal Scoring Engine with Quality Gates (Phase 1A)
@@ -50,7 +50,7 @@
 #### **Phase 1: Real Estate Analysis V2 Core System (Hours 4-10)**
 - ✅ **Database Schema:** properties, property_analyses, analysis_batches tables (two-table entity/event model)
 - ✅ **Backend Services:**
-  - ✅ BatchAnalysisOrchestrator (src/services/batch-analysis-orchestrator.ts - 405 lines)
+  - ✅ BatchAnalysisOrchestrator (src/services/batch-analysis-orchestrator.ts - 439 lines)
   - ✅ AIModelService with Claude 3.5 Sonnet + GPT-4 (src/services/ai-model-service.ts - 372 lines)
   - ✅ ZillowScraperService with Firecrawl API (src/services/zillow-scraper-service.ts)
 - ✅ **Real-time Progress:** WebSocket integration at ws://localhost:3000/ws/progress
@@ -78,17 +78,38 @@
 - ✅ Reorganized /implementation/ into /current/ and /future/ subdirectories
 - ✅ Updated TECHNICAL-IMPLEMENTATION-PLAN.md with current implementation status
 - ✅ Created CNS learning entry for automatic context loading
+- ✅ **Created QUALITY-TRACKING-ANALYTICS-SYSTEM.md** - Complete architecture for universal quality tracking
+- ✅ **Updated IMPLEMENTATION-PLAN-AND-TRACKER.md** - Added quality tracking to all phases
+- ✅ **Designed universal database schema** - 5 tables for domain-agnostic quality metrics
+- ✅ **Specified analytics dashboard requirements** - Filtering, trends, AI insights
+- ✅ **Documented AI-driven improvement system** - Pattern detection and recommendations
 
-**Current Functionality:**
-- ✅ User can enter Zillow URL and start batch analysis
-- ✅ System scrapes property data via Firecrawl
-- ✅ Claude analyzes property, GPT-4 validates quality
-- ✅ WebSocket broadcasts real-time progress
-- ✅ Results saved to PostgreSQL (properties + property_analyses)
-- ✅ User can view completed analyses
-- ✅ Import properties from Zillow search results
-- ✅ Documentation organized with single source of truth per topic
-- ✅ Context continuity system for long projects across thread resets
+#### **Phase 4: Universal Engine Integration (Hour 17)** 🔥 IN PROGRESS
+- ✅ **Updated BatchAnalysisOrchestrator constructor:**
+  - Instantiates UniversalMethodologyEngine with config
+  - Registers RealEstateModuleV2 as domain module
+  - Logs initialization for debugging
+- ✅ **Refactored performPrimaryAnalysis() method:**
+  - Creates DomainAnalysisRequest with proper structure
+  - Routes analysis through engine.executeAnalysis()
+  - Removed direct AIModelService calls
+- ✅ **Updated RealEstateModuleV2.analyze():**
+  - Integrated AIModelService for actual Claude analysis
+  - Removed mock data return
+  - Returns real AI-powered analysis results
+  - Properly handles property data and analysis types
+- ✅ **Fixed property data field naming:**
+  - Updated zip_code → zipCode
+  - Updated living_area → livingArea
+  - Fixed zillow_url reference
+
+**Current Status:** Architecture now flows through Universal Engine correctly!
+```
+✅ NEW FLOW (CORRECT):
+User → BatchAnalysisOrchestrator → UniversalMethodologyEngine → RealEstateModuleV2 → AIModelService → Results
+                                            ↓
+                                    Quality validation with configurable threshold (85+)
+```
 
 ---
 
@@ -120,14 +141,17 @@ User → UniversalMethodologyEngine → RealEstateModuleV2 → AIModelService �
 
 ---
 
-### **Issue #2: No Iterative Quality Refinement** ⚠️ QUALITY THRESHOLD
-**Problem:** Analysis happens once (Claude → GPT-4) with no revision loop.
+### **Issue #2: No Iterative Quality Refinement + No Quality Tracking** ⚠️ QUALITY THRESHOLD
+**Problem:** Analysis happens once (Claude → GPT-4) with no revision loop, AND no database tracking of quality metrics.
 
 **Impact:**
 - Scores can be below 85/100 (no mechanism to improve)
 - GPT-4 feedback is captured but never applied
 - Mock score of 75 reported (indicates placeholder data path)
 - No quality gates enforcing threshold
+- **No tracking of quality over time** - can't measure system improvement
+- **No analytics** - can't identify patterns or optimization opportunities
+- **No AI-driven insights** - can't learn from performance data
 
 **Required Behavior:**
 1. Claude generates initial analysis
@@ -136,81 +160,181 @@ User → UniversalMethodologyEngine → RealEstateModuleV2 → AIModelService �
 4. GPT-4 re-validates
 5. Repeat until 85+ OR max iterations reached
 6. If still <85, reject analysis and notify user
+7. **NEW: Track all quality metrics in universal database schema**
+8. **NEW: Enable analytics dashboard and AI-driven insights**
 
-**Estimated Fix Time:** 3-4 hours (480-640 AI-equivalent hours)
+**Estimated Fix Time:** 4-5 hours (640-800 AI-equivalent hours)
+**Documentation:** `/documentation/architecture/QUALITY-TRACKING-ANALYTICS-SYSTEM.md`
 
 ---
 
-### **Issue #3: No User Feedback Integration** ⚠️ USER EXPERIENCE
-**Problem:** No UI for user to provide feedback on analysis quality.
+### **Issue #3: No User Feedback Integration + No Analytics Dashboard** ⚠️ USER EXPERIENCE
+**Problem:** No UI for user to provide feedback on analysis quality, and no dashboard to view quality trends.
 
 **Impact:**
 - User can't refine results interactively
 - No learning from user preferences
 - One-shot analysis with no iteration control
+- **No visibility into system quality trends**
+- **Can't see impact of reviews and feedback**
+- **No AI-driven improvement recommendations**
 
 **Required Features:**
 - User reviews analysis results
 - Provides feedback (e.g., "focus more on schools", "recalculate cash flow")
 - System applies feedback and re-analyzes
 - User approves final version
+- **NEW: Analytics dashboard at `/analytics` route**
+- **NEW: Quality metrics visualization (scores, trends, success rates)**
+- **NEW: AI insights panel with improvement recommendations**
+- **NEW: Module comparison and performance tracking**
 
-**Estimated Fix Time:** 6-8 hours (960-1,280 AI-equivalent hours)
+**Estimated Fix Time:** 8-10 hours (1,280-1,600 AI-equivalent hours)
+**Documentation:** `/documentation/architecture/QUALITY-TRACKING-ANALYTICS-SYSTEM.md`
 
 ---
 
 ## **REVISED IMPLEMENTATION PHASES**
 
-### **🎯 IMMEDIATE PRIORITY: Fix Architecture (Next 4-6 hours)**
-**Status:** 🔴 CRITICAL - Must complete before further development
+### **🎯 IMMEDIATE PRIORITY: Fix Architecture (4-6 hours total, 1 hour invested)**
+**Status:** � IN PROGRESS - 75% complete
 
-#### **Task 1: Wire Universal Engine to Orchestrator**
-- [ ] Update BatchAnalysisOrchestrator to instantiate UniversalMethodologyEngine
-- [ ] Register RealEstateModuleV2 as domain module
-- [ ] Route all analysis requests through engine.executeAnalysis()
-- [ ] Remove direct AIModelService calls from orchestrator
-- [ ] Test: Single property analysis goes through engine
+#### **Task 1: Wire Universal Engine to Orchestrator** (1 hour invested)
+- [x] Update BatchAnalysisOrchestrator to instantiate UniversalMethodologyEngine
+- [x] Register RealEstateModuleV2 as domain module
+- [x] Route all analysis requests through engine.executeAnalysis()
+- [x] Remove direct AIModelService calls from orchestrator
+- [ ] **Test: Single property analysis goes through engine** (NEXT STEP)
+- [ ] **Test: WebSocket progress still works**
+- [ ] **Test: Database saves correctly**
+- [ ] **Test: Real scores appear in UI (not mock 75)**
+
+**Progress:**
+- ✅ BatchAnalysisOrchestrator constructor now creates and configures UniversalMethodologyEngine
+- ✅ RealEstateModuleV2 registered with engine at initialization
+- ✅ performPrimaryAnalysis() now creates DomainAnalysisRequest and calls engine.executeAnalysis()
+- ✅ RealEstateModuleV2.analyze() integrated with AIModelService (no more mock data)
+- ✅ Property data field naming fixed (zipCode, livingArea)
+- ⏳ **NEXT:** Test end-to-end flow with real property analysis
 
 **Acceptance Criteria:**
 - ✅ Orchestrator calls engine.executeAnalysis() for all properties
-- ✅ Engine manages Claude → GPT-4 → Claude flow
-- ✅ Database still saves results correctly
+- ✅ Engine manages domain module execution
+- [ ] Database still saves results correctly (needs testing)
+- [ ] Real AI scores replace mock 75 score (needs testing)
 
 ---
 
-### **🔄 PHASE 2: Implement Iterative Refinement (Next 3-4 hours)**
+### **🔄 PHASE 2: Implement Iterative Refinement + Quality Tracking** (Next 4-5 hours)
 **Status:** 🟡 READY - Depends on Universal Engine integration
 
-#### **Task 2: Quality Feedback Loop**
+#### **Task 2A: Quality Feedback Loop**
 - [ ] Implement refinement logic in UniversalMethodologyEngine
 - [ ] Parse GPT-4 feedback into actionable improvements
 - [ ] Pass feedback to Claude for revision
 - [ ] Track iteration count (max 3 attempts)
 - [ ] Enforce 85/100+ threshold or reject
 
+#### **Task 2B: Universal Quality Tracking Schema**
+- [ ] Create database migration for 5 new tables:
+  - `universal_analyses` (central registry)
+  - `quality_metrics` (scores and process metrics)
+  - `quality_iterations` (iteration details)
+  - `user_feedback` (feedback tracking with impact)
+  - `module_performance_cache` (aggregated metrics)
+- [ ] Add indexes for performance
+- [ ] Create TypeScript types for all tables
+- [ ] Implement `QualityTrackingService`
+
+#### **Task 2C: Integration with Analysis Flow**
+- [ ] Track analysis creation in `universal_analyses`
+- [ ] Record quality metrics at each stage
+- [ ] Store iteration details with triggers and improvements
+- [ ] Update metrics when user provides feedback
+- [ ] Calculate and cache performance metrics
+
 **Acceptance Criteria:**
 - ✅ Analysis iterates until 85+ quality score
 - ✅ GPT-4 feedback applied to Claude revisions
 - ✅ System stops after 3 iterations if threshold not met
 - ✅ User notified if analysis rejected (score <85 after 3 attempts)
+- ✅ All quality metrics stored in database
+- ✅ Can query quality data for any module/analysis type
+- ✅ Performance metrics cached for fast dashboard queries
+
+**Documentation:** `/documentation/architecture/QUALITY-TRACKING-ANALYTICS-SYSTEM.md`
 
 ---
 
-### **🎨 PHASE 3: User Feedback Integration (Next 6-8 hours)**
+### **🎨 PHASE 3: User Feedback Integration + Analytics Dashboard** (Next 8-10 hours)
 **Status:** ⏸️ BLOCKED - Depends on iterative refinement
 
-#### **Task 3: Interactive Analysis Refinement**
+#### **Task 3A: User Feedback Collection**
 - [ ] Add feedback form to results page
 - [ ] Capture user improvement requests
 - [ ] Trigger re-analysis with user context
 - [ ] Show comparison (before/after feedback)
 - [ ] Allow approval of final version
+- [ ] Store feedback in `user_feedback` table with impact tracking
+
+#### **Task 3B: Analytics Dashboard**
+- [ ] Create `/analytics` route and page
+- [ ] Build system overview panel:
+  - Current quality score distribution
+  - Success rate (% meeting 85+ threshold)
+  - Total analyses completed
+  - Quality score histogram
+- [ ] Build performance metrics panel:
+  - Average iterations to threshold by module
+  - Review impact (avg score increase)
+  - User feedback impact (avg score increase)
+  - Most common improvement triggers
+- [ ] Build trends over time panel:
+  - Quality scores line chart (30/60/90 days)
+  - Success rate trend
+  - Iteration count trend
+  - Feedback volume by week
+- [ ] Build module comparison panel:
+  - Side-by-side metrics for all modules
+  - Success rates, avg scores, iteration counts
+- [ ] Add filtering capabilities:
+  - By module (real-estate, business-analysis, etc.)
+  - By analysis type (primary-residence, investment, etc.)
+  - By date range
+  - By quality threshold
+
+#### **Task 3C: AI Insights Panel**
+- [ ] Create `QualityImprovementAI` service
+- [ ] Implement pattern detection from quality data
+- [ ] Generate improvement recommendations
+- [ ] Build AI insights UI panel:
+  - Common failure patterns
+  - Success factors (what makes quality jump)
+  - Efficiency opportunities
+  - Module-specific optimization suggestions
+- [ ] Add action buttons:
+  - "Apply AI Recommendations"
+  - "Generate Improved Prompts"
+  - "Test Quality Prediction"
+
+#### **Task 3D: Per-Analysis Quality Timeline**
+- [ ] Show quality journey for each analysis
+- [ ] Display: Initial → Post-Review → Post-Feedback scores
+- [ ] Show what triggered improvements
+- [ ] Track time spent in each quality stage
 
 **Acceptance Criteria:**
 - ✅ User can provide feedback on completed analysis
 - ✅ System re-analyzes with user feedback incorporated
 - ✅ User can iterate multiple times until satisfied
 - ✅ Final approved version saved to database
+- ✅ Analytics dashboard displays real-time quality metrics
+- ✅ Can filter analyses by module, type, date, quality
+- ✅ Trends visible over time with charts
+- ✅ AI insights panel shows actionable recommendations
+- ✅ Module comparison enables best practice identification
+
+**Documentation:** `/documentation/architecture/QUALITY-TRACKING-ANALYTICS-SYSTEM.md`
 
 ---
 
@@ -234,19 +358,20 @@ User → UniversalMethodologyEngine → RealEstateModuleV2 → AIModelService �
 
 ## **EXECUTION TIMELINE (160:1 Model)**
 
-### **Current Investment:** 12 human hours = 1,920 AI hours = 240 AI workdays
-### **Remaining Work:** 21-28 human hours = 3,360-4,480 AI hours = 420-560 AI workdays
+### **Current Investment:** 17 human hours = 2,720 AI hours = 340 AI workdays
+### **Remaining Work:** 18-28 human hours = 2,880-4,480 AI hours = 360-560 AI workdays
 
 | Phase | Human Hours | AI-Equivalent Hours | Status | Completion |
 |-------|-------------|---------------------|---------|------------|
 | **Phase 0: Foundation** | 3 hrs | 480 hrs | ✅ DONE | 100% |
 | **Phase 1: Core System** | 7 hrs | 1,120 hrs | ✅ DONE | 100% |
 | **Phase 2: Emergency Fixes** | 2 hrs | 320 hrs | ✅ DONE | 100% |
-| **CRITICAL: Engine Integration** | 4-6 hrs | 640-960 hrs | 🔴 NEXT | 0% |
-| **Quality Iteration** | 3-4 hrs | 480-640 hrs | 🟡 READY | 0% |
-| **User Feedback** | 6-8 hrs | 960-1,280 hrs | ⏸️ BLOCKED | 0% |
+| **Phase 3: Documentation** | 4 hrs | 640 hrs | ✅ DONE | 100% |
+| **Phase 4: Engine Integration** | 1 hr | 160 hrs | � IN PROGRESS | 75% |
+| **Quality Iteration + Tracking** | 4-5 hrs | 640-800 hrs | 🟡 READY | 0% |
+| **User Feedback + Analytics** | 8-10 hrs | 1,280-1,600 hrs | ⏸️ BLOCKED | 0% |
 | **Portfolio Management** | 8-10 hrs | 1,280-1,600 hrs | ⏸️ BLOCKED | 0% |
-| **TOTAL** | **33-40 hrs** | **5,280-6,400 hrs** | **36% COMPLETE** | **36%** |
+| **TOTAL** | **37-50 hrs** | **5,920-8,000 hrs** | **45% COMPLETE** | **45%** |
 
 ---
 

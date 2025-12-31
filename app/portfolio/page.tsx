@@ -275,83 +275,10 @@ function PropertyConfirmationModal({ property, onConfirm, onCancel }: PropertyCo
   );
 }
 
-// Updated property data structure with more detailed information
+// Empty portfolio data - will be populated from database
 const portfolioData = {
-  primaryResidence: {
-    id: 'primary-1',
-    address: "Primary Residence", // User needs to provide actual address
-    city: "Location TBD",
-    state: "AZ",
-    zipCode: "00000",
-    type: "Single Family Home",
-    status: "Owner Occupied",
-    currentValue: 875000, // User needs to provide current market value
-    purchasePrice: 620000, // User needs to provide actual purchase price
-    purchaseDate: "2020-03-15",
-    mortgageBalance: 420000, // User needs to provide current mortgage balance
-    monthlyPayment: 3200,
-    bedrooms: 4,
-    bathrooms: 3.5,
-    sqft: 2850,
-    lotSize: 0.75,
-    yearBuilt: 2005,
-    hasPool: true,
-    hasCasita: true,
-    features: ["Pool", "Casita", "Mountain View", "3-car garage"],
-    lastAnalysis: "2024-01-15"
-  },
-  rentalProperties: [
-    {
-      id: 'rental-1',
-      address: "Rental Property #1", // User needs actual address
-      city: "Mesa",
-      state: "AZ", 
-      zipCode: "85202",
-      type: "Single Family Home",
-      status: "Rental Income",
-      currentValue: 425000,
-      purchasePrice: 285000,
-      purchaseDate: "2018-06-20",
-      mortgageBalance: 180000,
-      monthlyRent: 2400,
-      monthlyMortgage: 1650,
-      bedrooms: 3,
-      bathrooms: 2,
-      sqft: 1650,
-      lotSize: 0.25,
-      yearBuilt: 1998,
-      hasPool: false,
-      hasCasita: false,
-      tenantType: "Long-term Family",
-      managementType: "Self-managed",
-      lastAnalysis: "2023-12-10"
-    },
-    {
-      id: 'rental-2',
-      address: "Rental Property #2", // User needs actual address
-      city: "Tempe",
-      state: "AZ",
-      zipCode: "85284", 
-      type: "Townhouse",
-      status: "Rental Income",
-      currentValue: 385000,
-      purchasePrice: 295000,
-      purchaseDate: "2019-08-12",
-      mortgageBalance: 195000,
-      monthlyRent: 2200,
-      monthlyMortgage: 1580,
-      bedrooms: 3,
-      bathrooms: 2.5,
-      sqft: 1480,
-      lotSize: 0.15,
-      yearBuilt: 2002,
-      hasPool: false,
-      hasCasita: false,
-      tenantType: "Long-term Professional",
-      managementType: "Self-managed",
-      lastAnalysis: "2023-11-28"
-    }
-  ]
+  primaryResidence: null as any,
+  rentalProperties: [] as any[]
 };
 
 export default function PortfolioPage() {
@@ -699,141 +626,153 @@ export default function PortfolioPage() {
               )}
             </div>
             
-            <div className="domain-card">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h4 className="domain-title-small">{portfolioData.primaryResidence.address}</h4>
-                  <p className="text-sm text-text-secondary">
-                    {portfolioData.primaryResidence.city}, {portfolioData.primaryResidence.state} {portfolioData.primaryResidence.zipCode}
-                  </p>
-                </div>
-                <div className="domain-badge active">Primary</div>
+            {/* Empty State - No Primary Residence */}
+            {!portfolioData.primaryResidence && realProperties.filter(p => p.property_type === 'primary').length === 0 && (
+              <div className="domain-card text-center py-12">
+                <div className="text-5xl mb-4">🏠</div>
+                <h4 className="domain-title-small mb-2">No Primary Residence</h4>
+                <p className="text-text-secondary mb-6">
+                  Add your primary residence to track its value and equity
+                </p>
+                <button 
+                  onClick={() => {
+                    setPropertyType('primary');
+                    setShowAddProperty(true);
+                  }}
+                  className="btn-primary"
+                >
+                  Add Primary Residence
+                </button>
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <h5 className="font-semibold text-text-primary mb-2">Property Details</h5>
-                  <div className="space-y-1 text-sm">
-                    <p><span className="text-text-secondary">Type:</span> {portfolioData.primaryResidence.type}</p>
-                    <p><span className="text-text-secondary">Size:</span> {portfolioData.primaryResidence.bedrooms}br/{portfolioData.primaryResidence.bathrooms}ba</p>
-                    <p><span className="text-text-secondary">Square Feet:</span> {portfolioData.primaryResidence.sqft.toLocaleString()} sqft</p>
-                    <p><span className="text-text-secondary">Lot Size:</span> {portfolioData.primaryResidence.lotSize} acres</p>
-                    <p><span className="text-text-secondary">Year Built:</span> {portfolioData.primaryResidence.yearBuilt}</p>
-                    <p><span className="text-text-secondary">Features:</span> {portfolioData.primaryResidence.features.join(', ')}</p>
+            )}
+
+            {/* Show Real Properties from Database */}
+            {realProperties.filter(p => p.property_type === 'primary').map((property: any) => (
+              <div key={property.id} className="domain-card">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h4 className="domain-title-small">{property.property_data.address}</h4>
+                    <p className="text-sm text-text-secondary">
+                      {property.property_data.city}, {property.property_data.state} {property.property_data.zipCode}
+                    </p>
                   </div>
+                  <div className="domain-badge active">Primary</div>
                 </div>
                 
-                <div>
-                  <h5 className="font-semibold text-text-primary mb-2">Financial Details</h5>
-                  <div className="space-y-1 text-sm">
-                    <p><span className="text-text-secondary">Current Value:</span> <span className="text-accent-primary font-semibold">${portfolioData.primaryResidence.currentValue.toLocaleString()}</span></p>
-                    <p><span className="text-text-secondary">Purchase Price:</span> ${portfolioData.primaryResidence.purchasePrice.toLocaleString()}</p>
-                    <p><span className="text-text-secondary">Mortgage Balance:</span> ${(portfolioData.primaryResidence as any).mortgageBalance.toLocaleString()}</p>
-                    <p><span className="text-text-secondary">Current Equity:</span> <span className="text-status-active font-semibold">${(portfolioData.primaryResidence.currentValue - (portfolioData.primaryResidence as any).mortgageBalance).toLocaleString()}</span></p>
-                    <p><span className="text-text-secondary">Monthly Payment:</span> ${(portfolioData.primaryResidence as any).monthlyPayment.toLocaleString()}</p>
-                    <p><span className="text-text-secondary">Purchase Date:</span> {new Date(portfolioData.primaryResidence.purchaseDate).toLocaleDateString()}</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <h5 className="font-semibold text-text-primary mb-2">Property Details</h5>
+                    <div className="space-y-1 text-sm">
+                      <p><span className="text-text-secondary">Type:</span> {property.property_data.propertyType || 'Single Family'}</p>
+                      <p><span className="text-text-secondary">Size:</span> {property.property_data.bedrooms}br/{property.property_data.bathrooms}ba</p>
+                      <p><span className="text-text-secondary">Square Feet:</span> {(property.property_data.livingArea || property.property_data.sqft || 0).toLocaleString()} sqft</p>
+                      <p><span className="text-text-secondary">Year Built:</span> {property.property_data.yearBuilt}</p>
+                    </div>
                   </div>
-                </div>
-                
-                <div>
-                  <h5 className="font-semibold text-text-primary mb-2">Performance</h5>
-                  <div className="space-y-1 text-sm">
-                    <p><span className="text-text-secondary">Appreciation:</span> <span className="text-status-active font-semibold">+${(portfolioData.primaryResidence.currentValue - portfolioData.primaryResidence.purchasePrice).toLocaleString()}</span></p>
-                    <p><span className="text-text-secondary">Total ROI:</span> <span className="text-status-active font-semibold">{(((portfolioData.primaryResidence.currentValue - portfolioData.primaryResidence.purchasePrice) / portfolioData.primaryResidence.purchasePrice) * 100).toFixed(1)}%</span></p>
-                    <p><span className="text-text-secondary">Years Owned:</span> {Math.round((new Date().getTime() - new Date(portfolioData.primaryResidence.purchaseDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000))}</p>
-                    <p><span className="text-text-secondary">Last Analysis:</span> {portfolioData.primaryResidence.lastAnalysis}</p>
+                  
+                  <div>
+                    <h5 className="font-semibold text-text-primary mb-2">Financial Details</h5>
+                    <div className="space-y-1 text-sm">
+                      <p><span className="text-text-secondary">Current Value:</span> <span className="text-accent-primary font-semibold">${(property.property_data.price || 0).toLocaleString()}</span></p>
+                    </div>
                   </div>
-                  <div className="mt-4 space-y-2">
-                    <button className="btn-secondary w-full">
-                      Re-analyze Property
-                    </button>
-                    <button className="btn-outline w-full">
-                      Edit Details
-                    </button>
+                  
+                  <div>
+                    <h5 className="font-semibold text-text-primary mb-2">Actions</h5>
+                    <div className="mt-4 space-y-2">
+                      <button className="btn-secondary w-full">
+                        Re-analyze Property
+                      </button>
+                      <button className="btn-outline w-full">
+                        Edit Details
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            ))}
           </div>
 
           {/* Rental Properties */}
           <div>
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold text-text-primary">Rental Properties</h3>
+              <h3 className="text-xl font-semibold text-text-primary">Investment Properties</h3>
+              <button 
+                onClick={() => {
+                  setPropertyType('rental');
+                  setShowAddProperty(true);
+                }}
+                className="btn-primary"
+              >
+                + Add Rental
+              </button>
             </div>
             <div className="space-y-6">
-              {portfolioData.rentalProperties.map((property, index) => {
-                const equity = property.currentValue - property.mortgageBalance;
-                const appreciation = property.currentValue - property.purchasePrice;
-                const monthlyProfit = property.monthlyRent - property.monthlyMortgage;
-                const roi = ((appreciation / property.purchasePrice) * 100);
-                const yearsOwned = Math.round((new Date().getTime() - new Date(property.purchaseDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
-                
-                return (
-                  <div key={property.id} className="domain-card">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h4 className="domain-title-small">Rental Property #{index + 1}</h4>
-                        <p className="text-sm text-text-secondary">
-                          {property.address} - {property.city}, {property.state} {property.zipCode}
-                        </p>
+              {/* Empty State - No Rental Properties */}
+              {realProperties.filter(p => p.property_type === 'rental').length === 0 && (
+                <div className="domain-card text-center py-12">
+                  <div className="text-5xl mb-4">🏘️</div>
+                  <h4 className="domain-title-small mb-2">No Investment Properties</h4>
+                  <p className="text-text-secondary mb-6">
+                    Add rental properties to track income and ROI
+                  </p>
+                  <button 
+                    onClick={() => {
+                      setPropertyType('rental');
+                      setShowAddProperty(true);
+                    }}
+                    className="btn-primary"
+                  >
+                    Add Your First Rental
+                  </button>
+                </div>
+              )}
+              
+              {/* Show Real Rental Properties from Database */}
+              {realProperties.filter(p => p.property_type === 'rental').map((property: any, index: number) => (
+                <div key={property.id} className="domain-card">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h4 className="domain-title-small">Rental Property #{index + 1}</h4>
+                      <p className="text-sm text-text-secondary">
+                        {property.property_data.address} - {property.property_data.city}, {property.property_data.state} {property.property_data.zipCode}
+                      </p>
+                    </div>
+                    <div className="domain-badge development">Rental</div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                      <h5 className="font-semibold text-text-primary mb-2">Property Details</h5>
+                      <div className="space-y-1 text-sm">
+                        <p><span className="text-text-secondary">Type:</span> {property.property_data.propertyType || 'Single Family'}</p>
+                        <p><span className="text-text-secondary">Size:</span> {property.property_data.bedrooms}br/{property.property_data.bathrooms}ba</p>
+                        <p><span className="text-text-secondary">Square Feet:</span> {(property.property_data.livingArea || property.property_data.sqft || 0).toLocaleString()} sqft</p>
+                        <p><span className="text-text-secondary">Year Built:</span> {property.property_data.yearBuilt}</p>
                       </div>
-                      <div className="domain-badge development">Rental</div>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div>
-                        <h5 className="font-semibold text-text-primary mb-2">Property Details</h5>
-                        <div className="space-y-1 text-sm">
-                          <p><span className="text-text-secondary">Type:</span> {property.type}</p>
-                          <p><span className="text-text-secondary">Size:</span> {property.bedrooms}br/{property.bathrooms}ba</p>
-                          <p><span className="text-text-secondary">Square Feet:</span> {property.sqft.toLocaleString()} sqft</p>
-                          <p><span className="text-text-secondary">Lot Size:</span> {property.lotSize} acres</p>
-                          <p><span className="text-text-secondary">Year Built:</span> {property.yearBuilt}</p>
-                          <p><span className="text-text-secondary">Management:</span> {property.managementType}</p>
-                          <p><span className="text-text-secondary">Tenant:</span> {property.tenantType}</p>
-                        </div>
+                    <div>
+                      <h5 className="font-semibold text-text-primary mb-2">Financial Details</h5>
+                      <div className="space-y-1 text-sm">
+                        <p><span className="text-text-secondary">Current Value:</span> <span className="text-accent-primary font-semibold">${(property.property_data.price || 0).toLocaleString()}</span></p>
                       </div>
-                      
-                      <div>
-                        <h5 className="font-semibold text-text-primary mb-2">Financial Details</h5>
-                        <div className="space-y-1 text-sm">
-                          <p><span className="text-text-secondary">Current Value:</span> <span className="text-accent-primary font-semibold">${property.currentValue.toLocaleString()}</span></p>
-                          <p><span className="text-text-secondary">Purchase Price:</span> ${property.purchasePrice.toLocaleString()}</p>
-                          <p><span className="text-text-secondary">Mortgage Balance:</span> ${property.mortgageBalance.toLocaleString()}</p>
-                          <p><span className="text-text-secondary">Current Equity:</span> <span className="text-status-active font-semibold">${equity.toLocaleString()}</span></p>
-                          <p><span className="text-text-secondary">Monthly Rent:</span> <span className="text-status-active font-semibold">${property.monthlyRent.toLocaleString()}</span></p>
-                          <p><span className="text-text-secondary">Monthly Mortgage:</span> ${property.monthlyMortgage.toLocaleString()}</p>
-                          <p><span className="text-text-secondary">Monthly Profit:</span> <span className="text-status-active font-semibold">${monthlyProfit.toLocaleString()}</span></p>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <h5 className="font-semibold text-text-primary mb-2">Performance</h5>
-                        <div className="space-y-1 text-sm">
-                          <p><span className="text-text-secondary">Appreciation:</span> <span className="text-status-active font-semibold">+${appreciation.toLocaleString()}</span></p>
-                          <p><span className="text-text-secondary">Total ROI:</span> <span className="text-status-active font-semibold">{roi.toFixed(1)}%</span></p>
-                          <p><span className="text-text-secondary">Annual ROI:</span> <span className="text-status-active font-semibold">{(roi / yearsOwned).toFixed(1)}%</span></p>
-                          <p><span className="text-text-secondary">Cap Rate:</span> <span className="text-status-active font-semibold">{((property.monthlyRent * 12) / property.currentValue * 100).toFixed(1)}%</span></p>
-                          <p><span className="text-text-secondary">Years Owned:</span> {yearsOwned}</p>
-                          <p><span className="text-text-secondary">Last Analysis:</span> {property.lastAnalysis}</p>
-                        </div>
-                        <div className="mt-4 space-y-2">
-                          <button className="btn-secondary w-full">
-                            Re-analyze Property
-                          </button>
-                          <button className="btn-secondary w-full">
-                            Edit Details
-                          </button>
-                          <button className="btn-destructive w-full">
-                            Delete Property
-                          </button>
-                        </div>
+                    </div>
+                    
+                    <div>
+                      <h5 className="font-semibold text-text-primary mb-2">Actions</h5>
+                      <div className="mt-4 space-y-2">
+                        <button className="btn-secondary w-full">
+                          Re-analyze Property
+                        </button>
+                        <button className="btn-outline w-full">
+                          Edit Details
+                        </button>
                       </div>
                     </div>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           </div>
           </>

@@ -4,6 +4,7 @@
  */
 
 import { DomainModule, DomainAnalysisRequest, DomainAnalysisResult } from '../types/domain';
+import { AIModelService } from '../services/ai-model-service';
 import { 
   BatchAnalysisRequest, 
   BatchAnalysisResult, 
@@ -14,34 +15,42 @@ import {
 } from '../types/batch-analysis';
 
 export class RealEstateModuleV2 implements DomainModule {
-  id = 'real-estate-v2';
+  id = 'real-estate';
   name = 'Real Estate Batch Analysis';
   description = 'Multi-property analysis with three-model validation and comprehensive scoring';
   version = '2.0.0';
   isActive = true;
+  
+  private aiService: AIModelService;
+
+  constructor() {
+    this.aiService = new AIModelService();
+  }
 
   /**
    * Analyze a single property (implements DomainModule interface)
+   * Now uses actual AI analysis via AIModelService
    */
   async analyze(request: DomainAnalysisRequest): Promise<DomainAnalysisResult> {
-    // Temporary implementation - returns mock data for testing
     const propertyData = request.inputData?.propertyData;
     const analysisType = request.inputData?.analysisType || 'rental';
     
-    return {
-      id: request.id,
-      domainType: 'real-estate',
-      recommendation: 'PROCEED',
-      analysis: {
-        summary: `Property Analysis: ${propertyData?.address || 'Unknown Address'}. This is a ${analysisType} property.`,
-        keyFindings: ['Property data extracted', 'Basic metrics calculated', 'Market evaluated'],
-        riskFactors: ['Full AI analysis pending in Phase 4'],
-        opportunities: ['Review property details', 'Compare with similar properties', 'Evaluate investment potential']
-      },
-      qualityScore: 75,
-      confidence: 0.75,
-      generatedAt: new Date()
-    };
+    if (!propertyData) {
+      throw new Error('Property data is required for analysis');
+    }
+    
+    console.log(`RealEstateModuleV2: Analyzing ${propertyData.address} (${analysisType})`);
+    
+    // Use AIModelService to perform actual Claude-powered analysis
+    const result = await this.aiService.analyzePrimaryWithClaude(propertyData, analysisType);
+    
+    // Ensure the result has the correct ID from the request
+    result.id = request.id;
+    result.domainType = 'real-estate';
+    
+    console.log(`RealEstateModuleV2: Analysis complete for ${propertyData.address} - Score: ${result.qualityScore}/100`);
+    
+    return result;
   }
 
   /**

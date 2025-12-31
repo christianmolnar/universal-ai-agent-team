@@ -39,7 +39,7 @@ export class AIModelService {
 
     try {
       const message = await this.anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20240620',
+        model: 'claude-4-sonnet',
         max_tokens: 4096,
         temperature: 0.3,
         system: systemPrompt,
@@ -104,7 +104,7 @@ Respond in JSON format:
 
     try {
       const completion = await this.openai.chat.completions.create({
-        model: 'gpt-4-turbo-preview',
+        model: 'gpt-4o',
         temperature: 0.2,
         response_format: { type: 'json_object' },
         messages: [
