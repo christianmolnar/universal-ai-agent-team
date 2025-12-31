@@ -7,8 +7,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { Pool } from 'pg';
 import { RealEstateModuleV2 } from '@/src/domains/real-estate-module-v2';
 import { ZillowScraperService } from '@/src/services/zillow-scraper';
-import { AIModelService } from '@/src/services/ai-model-service';
-import { wsProgressManager } from '@/src/services/websocket-progress-manager';
 import {
   AnalysisBatch,
   PropertyAnalysis,
@@ -26,13 +24,11 @@ export class BatchAnalysisOrchestrator {
   private db: Pool;
   private realEstateModule: RealEstateModuleV2;
   private scraperService: ZillowScraperService;
-  private aiService: AIModelService;
 
   constructor(dbPool: Pool) {
     this.db = dbPool;
     this.realEstateModule = new RealEstateModuleV2();
     this.scraperService = new ZillowScraperService();
-    this.aiService = new AIModelService();
   }
 
   /**
@@ -134,7 +130,7 @@ export class BatchAnalysisOrchestrator {
         propertyStatuses.set(propertyId, 'reviewing');
         this.sendProgress(batch.id, propertyId, propertyData.address, completed, request.properties.length, 'quality_review_started', onProgress);
 
-        const qualityReview = await this.performQualityReview(primaryAnalysis, propertyData);
+        const qualityReview = await this.performQualityReview(primaryAnalysis);
 
         // Step 4: Final validation
         propertyStatuses.set(propertyId, 'validating');
@@ -220,18 +216,32 @@ export class BatchAnalysisOrchestrator {
    */
   private async performPrimaryAnalysis(
     propertyData: PropertyData,
-    propertyType: 'primary' | 'rental'
+    propertyTypes: 'primary' | 'rental' | 'both'
   ): Promise<DomainAnalysisResult> {
-    // Use AIModelService for Claude-powered analysis
-    return await this.aiService.analyzePrimaryWithClaude(propertyData, propertyType);
+    // Use RealEstateModuleV2 for analysis
+    const request = {
+      id: uuidv4(),
+      domainType: 'real-estate' as const,
+      inputData: {
+        propertyData,
+        analysisType: propertyTypes,
+      },
+    };
+
+    const result = await this.realEstateModule.analyze(request);
+    return result;
   }
 
   /**
    * Perform quality review using GPT-4 (Universal Methodology Stage 2)
    */
-  private async performQualityReview(primaryAnalysis: DomainAnalysisResult, propertyData: PropertyData): Promise<any> {
-    // Use AIModelService for GPT-4 quality review
-    return await this.aiService.reviewQualityWithGPT4(propertyData, primaryAnalysis);
+  private async performQualityReview(primaryAnalysis: DomainAnalysisResult): Promise<any> {
+    // Placeholder - will be implemented with actual GPT-4 validation in Phase 4
+    return {
+      quality_score: primaryAnalysis.qualityScore,
+      issues: [],
+      validated_at: new Date(),
+    };
   }
 
   /**
@@ -241,77 +251,30 @@ export class BatchAnalysisOrchestrator {
     primaryAnalysis: DomainAnalysisResult,
     qualityReview: any
   ): Promise<DomainAnalysisResult> {
-    // Apply quality review adjustments
-    let finalScore = primaryAnalysis.qualityScore;
-    let finalRecommendation = primaryAnalysis.recommendation;
-
-    // Adjust score based on quality review
-    if (qualityReview.overallAssessment === 'REJECTED') {
-      finalScore = Math.min(finalScore, 50);
-      finalRecommendation = 'REJECT';
-    } else if (qualityReview.overallAssessment === 'CONCERNS') {
-      // Reduce score by 10% for concerns
-      finalScore = Math.round(finalScore * 0.9);
-      if (finalScore < 60) finalRecommendation = 'REJECT';
-      else if (finalScore < 80) finalRecommendation = 'CAUTION';
-    }
-
-    // Return adjusted analysis
-    return {
-      ...primaryAnalysis,
-      qualityScore: finalScore,
-      recommendation: finalRecommendation,
-      confidence: Math.round((primaryAnalysis.confidence + qualityReview.confidenceScore * 100) / 2),
-    };
+    // Placeholder - will be implemented with final validation logic in Phase 4
+    return primaryAnalysis;
   }
 
   /**
-   * Save property analysis to database (NEW SCHEMA - properties + property_analyses)
+   * Save property analysis to database
    */
   private async savePropertyAnalysis(analysis: PropertyAnalysis): Promise<void> {
-    // First, ensure property exists in properties table
-    const propertyInsert = `
-      INSERT INTO properties (
-        zpid, address, city, state, zip_code,
-        bedrooms, bathrooms, living_area, zillow_url
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      ON CONFLICT (zpid) DO UPDATE SET
-        address = EXCLUDED.address,
-        updated_at = CURRENT_TIMESTAMP
-    `;
-    
-    await this.db.query(propertyInsert, [
-      analysis.property_data.zpid,
-      analysis.property_data.address,
-      analysis.property_data.city,
-      analysis.property_data.state,
-      analysis.property_data.zip_code,
-      analysis.property_data.bedrooms,
-      analysis.property_data.bathrooms,
-      analysis.property_data.living_area,
-      analysis.property_data.zillow_url,
-    ]);
-
-    // Then, insert analysis record
-    const analysisInsert = `
+    const query = `
       INSERT INTO property_analyses (
-        id, property_id, user_id, batch_id, property_type,
-        price_at_analysis, primary_analysis, quality_review, final_validation,
-        quality_score, recommendation, confidence, status, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, CURRENT_TIMESTAMP)
-      ON CONFLICT (batch_id, property_id) DO UPDATE SET
-        quality_score = EXCLUDED.quality_score,
-        recommendation = EXCLUDED.recommendation,
-        status = EXCLUDED.status
+        id, user_id, batch_id, zpid, zillow_url, property_type,
+        property_data, primary_analysis, quality_review, final_validation,
+        quality_score, recommendation, confidence, status, error_message
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
     `;
 
-    await this.db.query(analysisInsert, [
+    await this.db.query(query, [
       analysis.id,
-      analysis.property_data.zpid, // property_id is FK to properties.zpid
       analysis.user_id,
       analysis.batch_id,
+      analysis.zpid,
+      analysis.zillow_url,
       analysis.property_type,
-      analysis.property_data.price,
+      JSON.stringify(analysis.property_data),
       JSON.stringify(analysis.primary_analysis),
       JSON.stringify(analysis.quality_review),
       JSON.stringify(analysis.final_validation),
@@ -319,6 +282,7 @@ export class BatchAnalysisOrchestrator {
       analysis.recommendation,
       analysis.confidence,
       analysis.status,
+      analysis.error_message,
     ]);
   }
 
@@ -367,11 +331,7 @@ export class BatchAnalysisOrchestrator {
       },
     };
 
-    // Send via callback (for local testing)
     onProgress?.(update);
-
-    // Send via WebSocket (for real-time UI updates)
-    wsProgressManager.sendProgressUpdate(batchId, update);
   }
 
   /**

@@ -10,17 +10,11 @@ import { ProgressUpdate } from '@/src/types/batch-analysis';
 export class WebSocketProgressManager {
   private wss: WebSocketServer | null = null;
   private connections: Map<string, Set<WebSocket>> = new Map(); // batchId -> Set of WebSocket connections
-  private initPromise: Promise<void> | null = null;
 
   /**
    * Initialize WebSocket server
    */
   initialize(server: HTTPServer): void {
-    if (this.wss) {
-      console.log('WebSocket server already initialized');
-      return;
-    }
-
     this.wss = new WebSocketServer({ server, path: '/ws/progress' });
 
     this.wss.on('connection', (ws: WebSocket, req) => {
@@ -70,40 +64,25 @@ export class WebSocketProgressManager {
   }
 
   /**
-   * Ensure WebSocket is initialized (lazy initialization)
-   */
-  private ensureInitialized(): void {
-    if (this.wss) return;
-
-    // Try to get WebSocket server from global
-    const wss = (global as any).wss as WebSocketServer | undefined;
-    if (wss) {
-      this.wss = wss;
-      console.log('✅ WebSocket server connected to existing instance');
-    } else {
-      console.warn('WebSocket server not available');
-    }
-  }
-
-  /**
    * Send progress update to all clients watching a batch
    */
   sendProgressUpdate(batchId: string, update: ProgressUpdate): void {
-    this.ensureInitialized();
-    
+    const connections = this.connections.get(batchId);
+    if (!connections || connections.size === 0) {
+      return; // No active connections for this batch
+    }
+
     const message = {
       type: 'progress',
       ...update,
       timestamp: update.timestamp.toISOString(),
     };
 
-    // Use global broadcast function from server.js
-    const broadcast = (global as any).wsBroadcast;
-    if (broadcast) {
-      broadcast(batchId, message);
-    } else {
-      console.warn('WebSocket broadcast function not available');
-    }
+    connections.forEach((ws) => {
+      if (ws.readyState === WebSocket.OPEN) {
+        this.sendToClient(ws, message);
+      }
+    });
   }
 
   /**

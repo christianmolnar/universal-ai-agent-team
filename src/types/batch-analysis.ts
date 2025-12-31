@@ -75,9 +75,6 @@ export interface PropertyData {
   taxAssessedValue?: number;
   lastSoldPrice?: number;
   lastSoldDate?: string;
-  daysOnMarket?: number; // Time on Zillow/Market - indicator of seller motivation
-  priceReduction?: number; // Amount of recent price cut (if any)
-  rawMarkdown?: string; // Full scraped content for AI analysis
 }
 
 // ============================================================================

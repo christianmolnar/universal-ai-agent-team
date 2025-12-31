@@ -56,46 +56,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="dashboard-layout">
-      {/* Hamburger Button */}
-      <button
-        onClick={handleToggle}
-        className="hamburger-button"
-        aria-label="Toggle navigation"
-      >
-        <svg
-          className="hamburger-icon"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          {(isSidebarOpen && !isMobile) || (isMobileMenuOpen && isMobile) ? (
-            // X icon when open
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          ) : (
-            // Hamburger icon when closed
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 6h16M4 12h16M4 18h16"
-            />
-          )}
-        </svg>
-      </button>
-
-      {/* Mobile Overlay */}
-      {isMobileMenuOpen && (
-        <div
-          className="mobile-overlay"
-          onClick={() => setIsMobileMenuOpen(false)}
-        />
-      )}
-
       {/* Left Navigation */}
       <aside className={`left-nav ${isSidebarOpen ? 'open' : 'collapsed'} ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
         <div className="left-nav-content">

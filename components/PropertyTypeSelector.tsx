@@ -1,6 +1,6 @@
 /**
  * PropertyTypeSelector Component
- * Allows user to select analysis type: Rentals, Primary, or Both
+ * Allows user to select analysis type: Primary, Investment Property, or Both
  */
 
 'use client';
@@ -27,14 +27,14 @@ export default function PropertyTypeSelector({
 
   const options: { value: PropertyTypeOption; label: string; description: string }[] = [
     {
-      value: 'rentals',
-      label: 'Rentals',
-      description: 'Investment properties for rental income'
-    },
-    {
       value: 'primary',
       label: 'Primary Residence',
       description: 'Personal home for owner occupancy'
+    },
+    {
+      value: 'rentals',
+      label: 'Investment Property',
+      description: 'Investment properties for rental income'
     },
     {
       value: 'both',
@@ -82,11 +82,6 @@ export default function PropertyTypeSelector({
                 <div className="text-sm text-[var(--text-secondary)] leading-relaxed">
                   {option.description}
                 </div>
-                {option.value === 'rentals' && selected === 'rentals' && (
-                  <div className="inline-block mt-2 px-3 py-1 bg-[var(--accent-primary)] text-[var(--background)] text-xs font-semibold rounded-xl uppercase tracking-wide">
-                    Most Common
-                  </div>
-                )}
               </div>
             </div>
           </button>

@@ -1,7 +1,7 @@
 import './globals.css'
 
 export const metadata = {
-  title: 'Universal AI Agent Team Platform',
+  title: 'Universal AI Agent Team',
   description: 'Professional analysis with proven methodologies',
 }
 

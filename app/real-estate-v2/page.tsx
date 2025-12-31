@@ -17,6 +17,7 @@ export default function RealEstateAnalysisV2Page() {
   const [propertyType, setPropertyType] = useState<PropertyTypeOption>('rentals');
   const [urls, setUrls] = useState<string[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [showProgressModal, setShowProgressModal] = useState(false);
   const [currentBatchId, setCurrentBatchId] = useState<string | null>(null);
   const [progressData, setProgressData] = useState<ProgressUpdate | null>(null);
   const [results, setResults] = useState<PropertyAnalysis[]>([]);
@@ -50,6 +51,7 @@ export default function RealEstateAnalysisV2Page() {
 
     setError(null);
     setIsAnalyzing(true);
+    setShowProgressModal(true);
     setResults([]);
     setPropertyAddresses(new Map()); // Clear previous addresses
 
@@ -162,6 +164,7 @@ export default function RealEstateAnalysisV2Page() {
       const data = await response.json();
       setResults(data.results || []);
       setIsAnalyzing(false);
+      // Keep modal open so user can click "View Results"
     } catch (err) {
       console.error('Fetch results error:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch results');
@@ -483,17 +486,20 @@ export default function RealEstateAnalysisV2Page() {
         )}
 
         {/* Progress Modal */}
-        {isAnalyzing && progressData && (
+        {showProgressModal && progressData && (
           <AnalysisProgressModal
-            isOpen={isAnalyzing}
-            onClose={() => {}} // Don't allow closing during analysis
+            isOpen={showProgressModal}
+            onClose={() => {
+              setShowProgressModal(false);
+              // Results table will now be visible
+            }}
             batchId={currentBatchId || ''}
             totalProperties={progressData.progress.total}
             currentStep={getStepDescription(progressData.eventType)}
             propertyStatuses={getPropertyStatuses()}
             overallProgress={progressData.progress.percentage}
-            canClose={false}
-            onStopAfterCurrent={handleStopAfterCurrent}
+            canClose={!isAnalyzing} // Allow closing only when complete
+            onStopAfterCurrent={isAnalyzing ? handleStopAfterCurrent : undefined}
             onCancel={handleCancelAnalysis}
             isStopping={shouldStopAfterCurrent}
           />
@@ -516,6 +522,7 @@ export default function RealEstateAnalysisV2Page() {
                   setResults([]);
                   setCurrentBatchId(null);
                   setProgressData(null);
+                  setShowProgressModal(false);
                   setUrls([]);
                 }}
                 className="px-6 py-3 rounded-lg border-2 border-[var(--border-color)] hover:border-[var(--accent-primary)] text-[var(--text-primary)] font-semibold transition-colors"
@@ -646,6 +653,7 @@ export default function RealEstateAnalysisV2Page() {
                     
                     setError(null);
                     setIsAnalyzing(true);
+                    setShowProgressModal(true);
                     setResults([]);
                     setPropertyAddresses(new Map());
 

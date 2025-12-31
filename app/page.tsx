@@ -1,60 +1,77 @@
-'use client';
-
 import { DashboardLayout } from '@/components/DashboardLayout';
+import { CollapsibleSection } from '@/components/CollapsibleSection';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+
+// Real property data - need actual property information from user
+const realEstatePortfolio = {
+  primaryResidence: {
+    address: "Primary Residence", // User needs to provide actual address
+    city: "Location TBD",
+    purchaseDate: "2020-03-15", // User needs to provide actual date
+    purchasePrice: 620000, // User needs to provide actual purchase price
+    currentValue: 875000, // User needs to provide current market value
+    mortgageBalance: 420000, // User needs to provide current mortgage balance
+    monthlyPayment: 3200, // User needs to provide monthly payment
+    bedrooms: 4,
+    bathrooms: 3.5,
+    sqft: 2850,
+    yearBuilt: 2005,
+    lotSize: 0.75,
+    features: ["Pool", "Casita", "Mountain View"]
+  },
+  rentalProperties: [
+    {
+      id: 1,
+      address: "Rental Property #1", // User needs actual address
+      city: "Mesa, AZ",
+      purchaseDate: "2018-06-20",
+      purchasePrice: 285000,
+      currentValue: 425000,
+      mortgageBalance: 180000,
+      monthlyRent: 2400,
+      monthlyMortgage: 1650,
+      bedrooms: 3,
+      bathrooms: 2,
+      sqft: 1650,
+      yearBuilt: 1998,
+      lotSize: 0.25,
+      managementType: "Self-managed"
+    },
+    {
+      id: 2,
+      address: "Rental Property #2", // User needs actual address
+      city: "Tempe, AZ", 
+      purchaseDate: "2019-08-12",
+      purchasePrice: 295000,
+      currentValue: 385000,
+      mortgageBalance: 195000,
+      monthlyRent: 2200,
+      monthlyMortgage: 1580,
+      bedrooms: 3,
+      bathrooms: 2.5,
+      sqft: 1480,
+      yearBuilt: 2002,
+      lotSize: 0.15,
+      managementType: "Self-managed"
+    }
+  ]
+};
 
 export default function Home() {
-  const [realProperties, setRealProperties] = useState<any[]>([]);
-  const [isLoadingProperties, setIsLoadingProperties] = useState(true);
-
-  // Fetch properties from database on mount
-  useEffect(() => {
-    fetchProperties();
-  }, []);
-
-  const fetchProperties = async () => {
-    try {
-      setIsLoadingProperties(true);
-      const response = await fetch('/api/properties/get?userId=christian_molnar');
-      const result = await response.json();
-      
-      if (result.success) {
-        setRealProperties(result.properties);
-        console.log('Loaded properties from database:', result.properties);
-      }
-    } catch (error) {
-      console.error('Error fetching properties:', error);
-    } finally {
-      setIsLoadingProperties(false);
-    }
-  };
-
-  // Calculate portfolio metrics from real properties
-  const totalPortfolioValue = realProperties.reduce((sum, prop) => sum + (prop.property_data.price || 0), 0);
-  const totalEquity = realProperties.reduce((sum, prop) => {
-    const mortgageBalance = prop.user_mortgage_data?.mortgage_balance || 0;
-    return sum + ((prop.property_data.price || 0) - mortgageBalance);
-  }, 0);
+  // Calculate portfolio metrics
+  const totalPortfolioValue = realEstatePortfolio.primaryResidence.currentValue + 
+    realEstatePortfolio.rentalProperties.reduce((sum, prop) => sum + prop.currentValue, 0);
   
-  // ONLY calculate rental income/expenses from rental properties (exclude primary residence)
-  const rentalProperties = realProperties.filter(p => p.property_type === 'rental');
-  const primaryResidence = realProperties.find(p => p.property_type === 'primary');
+  const totalEquity = realEstatePortfolio.primaryResidence.currentValue - realEstatePortfolio.primaryResidence.mortgageBalance +
+    realEstatePortfolio.rentalProperties.reduce((sum, prop) => sum + (prop.currentValue - prop.mortgageBalance), 0);
   
-  const monthlyRentalIncome = rentalProperties.reduce((sum, prop) => sum + (prop.user_mortgage_data?.monthly_rent || 0), 0);
-  const monthlyRentalExpenses = rentalProperties.reduce((sum, prop) => sum + (prop.user_mortgage_data?.monthly_payment || 0), 0);
+  const monthlyRentalIncome = realEstatePortfolio.rentalProperties.reduce((sum, prop) => sum + prop.monthlyRent, 0);
+  const monthlyRentalExpenses = realEstatePortfolio.rentalProperties.reduce((sum, prop) => sum + prop.monthlyMortgage, 0);
   const netMonthlyIncome = monthlyRentalIncome - monthlyRentalExpenses;
 
-  // Primary residence calculations
-  const primaryEquity = primaryResidence 
-    ? (primaryResidence.property_data.price || 0) - (primaryResidence.user_mortgage_data?.mortgage_balance || 0)
-    : 0;
-  const primaryAppreciation = primaryResidence && primaryResidence.user_mortgage_data?.purchase_price
-    ? (primaryResidence.property_data.price || 0) - primaryResidence.user_mortgage_data.purchase_price
-    : 0;
-  const primaryROI = primaryResidence && primaryResidence.user_mortgage_data?.purchase_price
-    ? (primaryAppreciation / primaryResidence.user_mortgage_data.purchase_price * 100)
-    : 0;
+  const primaryEquity = realEstatePortfolio.primaryResidence.currentValue - realEstatePortfolio.primaryResidence.mortgageBalance;
+  const primaryAppreciation = realEstatePortfolio.primaryResidence.currentValue - realEstatePortfolio.primaryResidence.purchasePrice;
+  const primaryROI = (primaryAppreciation / realEstatePortfolio.primaryResidence.purchasePrice * 100);
 
   return (
     <DashboardLayout>
@@ -85,126 +102,93 @@ export default function Home() {
       </section>
 
       {/* Primary Residence Summary */}
-      <section className="mb-8">
-        <h2 className="section-title">Primary Residence</h2>
-        {isLoadingProperties ? (
-          <div className="domain-card">
-            <p className="text-text-secondary">Loading...</p>
-          </div>
-        ) : primaryResidence ? (
-          <div className="domain-card">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <h3 className="domain-title-small">Property Details</h3>
-                <div className="space-y-2">
-                  <p><strong>Address:</strong> {primaryResidence.property_data.address}</p>
-                  <p><strong>City:</strong> {primaryResidence.property_data.city}, {primaryResidence.property_data.state} {primaryResidence.property_data.zipCode}</p>
-                  <p><strong>Size:</strong> {primaryResidence.property_data.bedrooms}br/{primaryResidence.property_data.bathrooms}ba • {primaryResidence.property_data.sqft?.toLocaleString()} sqft</p>
-                  <p><strong>Lot:</strong> {(primaryResidence.property_data.lotSize / 43560).toFixed(2)} acres</p>
-                  <p><strong>Built:</strong> {primaryResidence.property_data.yearBuilt}</p>
-                  {primaryResidence.property_data.features && primaryResidence.property_data.features.length > 0 && (
-                    <p><strong>Features:</strong> {primaryResidence.property_data.features.slice(0, 5).join(', ')}</p>
-                  )}
-                </div>
+      <CollapsibleSection title="Primary Residence" defaultOpen={true}>
+        <div className="domain-card">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <h3 className="domain-title-small">Property Details</h3>
+              <div className="space-y-2">
+                <p><strong>Address:</strong> {realEstatePortfolio.primaryResidence.address}</p>
+                <p><strong>City:</strong> {realEstatePortfolio.primaryResidence.city}</p>
+                <p><strong>Size:</strong> {realEstatePortfolio.primaryResidence.bedrooms}br/{realEstatePortfolio.primaryResidence.bathrooms}ba • {realEstatePortfolio.primaryResidence.sqft.toLocaleString()} sqft</p>
+                <p><strong>Lot:</strong> {realEstatePortfolio.primaryResidence.lotSize} acres</p>
+                <p><strong>Built:</strong> {realEstatePortfolio.primaryResidence.yearBuilt}</p>
+                <p><strong>Features:</strong> {realEstatePortfolio.primaryResidence.features.join(', ')}</p>
               </div>
-              <div>
-                <h3 className="domain-title-small">Financial Summary</h3>
-                <div className="space-y-2">
-                  <p><strong>Current Value:</strong> <span className="text-accent-primary">${primaryResidence.property_data.price?.toLocaleString()}</span></p>
-                  {primaryResidence.user_mortgage_data?.purchase_price && (
-                    <p><strong>Purchase Price:</strong> ${primaryResidence.user_mortgage_data.purchase_price.toLocaleString()}</p>
-                  )}
-                  {primaryResidence.user_mortgage_data?.mortgage_balance && (
-                    <p><strong>Mortgage Balance:</strong> ${primaryResidence.user_mortgage_data.mortgage_balance.toLocaleString()}</p>
-                  )}
-                  <p><strong>Current Equity:</strong> <span className="text-status-active">${primaryEquity.toLocaleString()}</span></p>
-                  {primaryResidence.user_mortgage_data?.monthly_payment && (
-                    <p><strong>Monthly Payment:</strong> ${primaryResidence.user_mortgage_data.monthly_payment.toLocaleString()}</p>
-                  )}
-                  {primaryResidence.user_mortgage_data?.purchase_date && (
-                    <p><strong>Purchase Date:</strong> {new Date(primaryResidence.user_mortgage_data.purchase_date).toLocaleDateString()}</p>
-                  )}
-                </div>
+            </div>
+            <div>
+              <h3 className="domain-title-small">Financial Summary</h3>
+              <div className="space-y-2">
+                <p><strong>Current Value:</strong> <span className="text-accent-primary">${realEstatePortfolio.primaryResidence.currentValue.toLocaleString()}</span></p>
+                <p><strong>Purchase Price:</strong> ${realEstatePortfolio.primaryResidence.purchasePrice.toLocaleString()}</p>
+                <p><strong>Mortgage Balance:</strong> ${realEstatePortfolio.primaryResidence.mortgageBalance.toLocaleString()}</p>
+                <p><strong>Current Equity:</strong> <span className="text-status-active">${primaryEquity.toLocaleString()}</span></p>
+                <p><strong>Monthly Payment:</strong> ${realEstatePortfolio.primaryResidence.monthlyPayment.toLocaleString()}</p>
+                <p><strong>Purchase Date:</strong> {new Date(realEstatePortfolio.primaryResidence.purchaseDate).toLocaleDateString()}</p>
               </div>
-              <div>
-                <h3 className="domain-title-small">Performance</h3>
-                <div className="space-y-2">
-                  {primaryResidence.user_mortgage_data?.purchase_price && (
-                    <>
-                      <p><strong>Appreciation:</strong> <span className="text-status-active">${((primaryResidence.property_data.price || 0) - primaryResidence.user_mortgage_data.purchase_price).toLocaleString()}</span></p>
-                      <p><strong>ROI:</strong> <span className="text-status-active">{(((primaryResidence.property_data.price || 0) - primaryResidence.user_mortgage_data.purchase_price) / primaryResidence.user_mortgage_data.purchase_price * 100).toFixed(1)}%</span></p>
-                    </>
-                  )}
-                  {primaryResidence.user_mortgage_data?.purchase_date && (
-                    <p><strong>Years Owned:</strong> {Math.round((new Date().getTime() - new Date(primaryResidence.user_mortgage_data.purchase_date).getTime()) / (365.25 * 24 * 60 * 60 * 1000))}</p>
-                  )}
-                  <p><strong>Added:</strong> {new Date(primaryResidence.created_at).toLocaleDateString()}</p>
-                </div>
+            </div>
+            <div>
+              <h3 className="domain-title-small">Performance</h3>
+              <div className="space-y-2">
+                <p><strong>Appreciation:</strong> <span className="text-status-active">${primaryAppreciation.toLocaleString()}</span></p>
+                <p><strong>ROI:</strong> <span className="text-status-active">{primaryROI.toFixed(1)}%</span></p>
+                <p><strong>Years Owned:</strong> {Math.round((new Date().getTime() - new Date(realEstatePortfolio.primaryResidence.purchaseDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000))}</p>
+                <p><strong>Annual ROI:</strong> <span className="text-status-active">{(primaryROI / Math.round((new Date().getTime() - new Date(realEstatePortfolio.primaryResidence.purchaseDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000))).toFixed(1)}%</span></p>
               </div>
             </div>
           </div>
-        ) : (
-          <div className="domain-card">
-            <p className="text-text-secondary">No primary residence added yet. <Link href="/portfolio" className="text-accent-primary hover:underline">Add one in Portfolio →</Link></p>
-          </div>
-        )}
-      </section>
+        </div>
+      </CollapsibleSection>
 
       {/* Rental Properties Summary */}
-      <section className="mb-8">
+      <CollapsibleSection title="Investment Properties" defaultOpen={true}>
         <div className="flex justify-between items-center mb-6">
-          <h2 className="section-title mb-0">Rental Properties</h2>
           <Link href="/portfolio" className="btn-secondary">
-            View All Properties
+            View Investment Portfolio
           </Link>
         </div>
-        {isLoadingProperties ? (
-          <div className="domain-card">Loading properties...</div>
-        ) : rentalProperties.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {rentalProperties.map((property) => {
-              const propertyValue = property.property_data.price || 0;
-              const mortgageBalance = property.user_mortgage_data?.mortgageBalance || 0;
-              const equity = propertyValue - mortgageBalance;
-              const monthlyRent = property.user_mortgage_data?.monthlyRentalIncome || 0;
-              const monthlyExpenses = property.user_mortgage_data?.monthlyRentalExpenses || 0;
-              const monthlyProfit = monthlyRent - monthlyExpenses;
-              
-              return (
-                <div key={property.zpid} className="domain-card">
-                  <h3 className="domain-title-small">{property.property_data.address}</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <p><strong>City:</strong> {property.property_data.city}, {property.property_data.state}</p>
-                      <p><strong>Size:</strong> {property.property_data.bedrooms}br/{property.property_data.bathrooms}ba • {property.property_data.livingArea?.toLocaleString() || 'N/A'} sqft</p>
-                      <p><strong>Built:</strong> {property.property_data.yearBuilt || 'N/A'}</p>
-                      <p><strong>Lot:</strong> {property.property_data.lotAreaValue ? `${property.property_data.lotAreaValue.toLocaleString()} ${property.property_data.lotAreaUnit || ''}` : 'N/A'}</p>
-                    </div>
-                    <div>
-                      <p><strong>Current Value:</strong> <span className="text-accent-primary">${propertyValue.toLocaleString()}</span></p>
-                      <p><strong>Monthly Rent:</strong> <span className="text-status-active">${monthlyRent.toLocaleString()}</span></p>
-                      <p><strong>Monthly Profit:</strong> <span className="text-status-active">${monthlyProfit.toLocaleString()}</span></p>
-                      <p><strong>Equity:</strong> <span className="text-status-active">${equity.toLocaleString()}</span></p>
-                    </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {realEstatePortfolio.rentalProperties.map((property) => {
+            const equity = property.currentValue - property.mortgageBalance;
+            const appreciation = property.currentValue - property.purchasePrice;
+            const monthlyProfit = property.monthlyRent - property.monthlyMortgage;
+            const roi = (appreciation / property.purchasePrice * 100);
+            const yearsOwned = Math.round((new Date().getTime() - new Date(property.purchaseDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+            
+            return (
+              <div key={property.id} className="domain-card">
+                <h3 className="domain-title-small">Rental Property #{property.id}</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p><strong>Address:</strong> {property.address}</p>
+                    <p><strong>City:</strong> {property.city}</p>
+                    <p><strong>Size:</strong> {property.bedrooms}br/{property.bathrooms}ba • {property.sqft.toLocaleString()} sqft</p>
+                    <p><strong>Built:</strong> {property.yearBuilt}</p>
+                    <p><strong>Management:</strong> {property.managementType}</p>
+                  </div>
+                  <div>
+                    <p><strong>Current Value:</strong> <span className="text-accent-primary">${property.currentValue.toLocaleString()}</span></p>
+                    <p><strong>Monthly Rent:</strong> <span className="text-status-active">${property.monthlyRent.toLocaleString()}</span></p>
+                    <p><strong>Monthly Profit:</strong> <span className="text-status-active">${monthlyProfit.toLocaleString()}</span></p>
+                    <p><strong>Equity:</strong> <span className="text-status-active">${equity.toLocaleString()}</span></p>
+                    <p><strong>Total ROI:</strong> <span className="text-status-active">{roi.toFixed(1)}%</span></p>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="domain-card">No rental properties on file</div>
-        )}
-      </section>
+              </div>
+            );
+          })}
+        </div>
+      </CollapsibleSection>
 
       {/* Quick Actions */}
       <section>
         <h2 className="section-title">Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Link href="/portfolio" className="domain-card">
-            <h3 className="domain-title-small">📊 Manage Portfolio</h3>
-            <p className="domain-description">View, edit, and add new properties to your portfolio</p>
+            <h3 className="domain-title-small">📊 Investment Portfolio</h3>
+            <p className="domain-description">View and manage your investment properties</p>
           </Link>
-          <Link href="/real-estate" className="domain-card">
+          <Link href="/real-estate-v2" className="domain-card">
             <h3 className="domain-title-small">🏘️ Analyze Property</h3>
             <p className="domain-description">Add a new property from Zillow URL for analysis</p>
           </Link>

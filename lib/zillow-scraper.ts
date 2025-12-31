@@ -129,32 +129,18 @@ export function extractPropertyData($: cheerio.CheerioAPI, url: string, zpid?: s
     }
     console.log('Extracted bathrooms:', bathrooms, 'from text:', bathroomsText);
 
-    // Extract sqft - more careful to get only living area, not lot size
     const sqftText = $('[data-testid="sqft-value"]').text() || 
-                    $('[data-testid="property-meta"] span').filter((_, el) => {
-                      const text = $(el).text();
-                      return text.includes('sqft') && !text.toLowerCase().includes('lot') && !text.toLowerCase().includes('acre');
-                    }).first().text() ||
+                    $('[data-testid="property-meta"] span').filter((_, el) => $(el).text().includes('sqft')).text() ||
                     $('.summary-container .sqft').text() ||
-                    $('span').filter((_, el) => {
-                      const text = $(el).text();
-                      return text.match(/^\d+[,\s]*sqft$/i) !== null;
-                    }).first().text();
+                    $('span').filter((_, el) => $(el).text().match(/\d+\s*sqft/i) !== null).text();
     const sqft = parseInt(sqftText.replace(/[^\d]/g, '')) || 0;
     console.log('Extracted sqft:', sqft, 'from text:', sqftText);
 
-    // Extract lot size - more specific to avoid getting living area
+    // Extract lot size - updated selectors
     const lotSizeText = $('[data-testid="lot-size-value"]').text() ||
                        $('.summary-container .lot-size').text() ||
-                       $('[class*="lot"]').filter((_, el) => {
-                         const text = $(el).text().toLowerCase();
-                         return text.includes('lot') || text.includes('acre');
-                       }).first().text() ||
-                       $('span').filter((_, el) => {
-                         const text = $(el).text().toLowerCase();
-                         return (text.includes('acre') || (text.includes('lot') && text.includes('sqft'))) && 
-                                !text.includes('livable') && !text.includes('interior');
-                       }).first().text();
+                       $('[class*="lot"]').filter((_, el) => $(el).text().toLowerCase().includes('lot')).text() ||
+                       $('span').filter((_, el) => $(el).text().match(/\d+\.?\d*\s*(acre|sqft)/i) !== null).text();
     const lotSize = parseLotSize(lotSizeText);
     console.log('Extracted lot size:', lotSize, 'from text:', lotSizeText);
 
@@ -181,25 +167,15 @@ export function extractPropertyData($: cheerio.CheerioAPI, url: string, zpid?: s
                        '';
     console.log('Extracted description length:', description.length);
 
-    // Extract photos - updated selectors with better filtering
+    // Extract photos - updated selectors
     const photos: string[] = [];
     $('[data-testid="media-gallery"] img, .hero-image img, .property-photos img, img[src*="zillow"]').each((_, img) => {
       const src = $(img).attr('src') || $(img).attr('data-src');
-      if (src && 
-          !src.includes('placeholder') && 
-          !src.includes('logo') &&
-          !src.includes('tracking') &&
-          !src.includes('pixel') &&
-          !src.includes('1x1') &&
-          src.includes('photos.zillowstatic.com') &&
-          !photos.includes(src)) {
+      if (src && !src.includes('placeholder') && !src.includes('logo')) {
         photos.push(src);
       }
     });
-    
-    // Limit to first 3 high-quality photos only
-    const limitedPhotos = photos.slice(0, 3);
-    console.log('Extracted photos count:', limitedPhotos.length, 'of', photos.length, 'total');
+    console.log('Extracted photos count:', photos.length);
 
     // Extract features
     const features = extractFeatures($);
@@ -222,7 +198,7 @@ export function extractPropertyData($: cheerio.CheerioAPI, url: string, zpid?: s
       yearBuilt,
       propertyType,
       priceHistory,
-      photos: limitedPhotos,
+      photos,
       features,
       description,
       zillowUrl: url,
