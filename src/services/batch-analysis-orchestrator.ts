@@ -20,21 +20,38 @@ import {
   ProgressEventType,
   PropertyData,
 } from '@/src/types/batch-analysis';
-import { DomainAnalysisResult } from '@/src/types/domain';
+import { DomainAnalysisResult, DomainAnalysisRequest } from '@/src/types/domain';
 
 export type ProgressCallback = (update: ProgressUpdate) => void;
 
 export class BatchAnalysisOrchestrator {
   private db: Pool;
+  private engine: UniversalMethodologyEngine;
   private realEstateModule: RealEstateModuleV2;
   private scraperService: ZillowScraperService;
   private aiService: AIModelService;
 
   constructor(dbPool: Pool) {
     this.db = dbPool;
+    
+    // Initialize Universal Methodology Engine
+    this.engine = new UniversalMethodologyEngine({
+      qualityThreshold: 85,
+      maxIterations: 3,
+      enableUserFeedback: true,
+      autoApproveScore: 95,
+      domains: ['real-estate']
+    });
+    
+    // Initialize and register Real Estate Module
     this.realEstateModule = new RealEstateModuleV2();
+    this.engine.registerModule(this.realEstateModule);
+    
+    // Initialize services
     this.scraperService = new ZillowScraperService();
     this.aiService = new AIModelService();
+    
+    console.log('BatchAnalysisOrchestrator initialized with UniversalMethodologyEngine');
   }
 
   /**
@@ -271,24 +288,42 @@ export class BatchAnalysisOrchestrator {
   }
 
   /**
-   * Perform primary analysis using Claude (Universal Methodology Stage 1)
+   * Perform primary analysis using Universal Methodology Engine
+   * Routes through engine -> domain module -> AI service
    */
   private async performPrimaryAnalysis(
     propertyData: PropertyData,
     propertyType: 'primary' | 'rental'
   ): Promise<DomainAnalysisResult> {
     try {
-      // Use AIModelService for Claude-powered analysis
-      return await this.aiService.analyzePrimaryWithClaude(propertyData, propertyType);
+      // Create domain analysis request
+      const request: DomainAnalysisRequest = {
+        id: `analysis-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        domainType: 'real-estate',
+        inputData: {
+          propertyData,
+          analysisType: propertyType
+        },
+        userPreferences: {},
+        qualityThreshold: 85
+      };
+      
+      // Execute analysis through Universal Methodology Engine
+      console.log(`Routing analysis through UniversalMethodologyEngine for ${propertyData.address}`);
+      const result = await this.engine.executeAnalysis(request);
+      
+      console.log(`Analysis complete via engine - Score: ${result.qualityScore}/100, Recommendation: ${result.recommendation}`);
+      return result;
+      
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.warn('Claude API unavailable, using fallback analysis:', errorMessage);
+      console.error('Analysis failed through engine:', errorMessage);
       
-      // Return a mock analysis result when Claude is unavailable
+      // Return a fallback analysis result when engine fails
       return {
         id: `fallback-${Date.now()}`,
         domainType: 'real-estate',
-        qualityScore: 0.75,
+        qualityScore: 75,  // Integer from 0-100
         recommendation: 'CAUTION' as const,
         analysis: {
           summary: `Property analysis for ${propertyData.address}. This is a ${propertyData.bedrooms}BR/${propertyData.bathrooms}BA ${propertyData.propertyType || 'property'} listed at $${propertyData.price?.toLocaleString()}.`,
@@ -297,7 +332,7 @@ export class BatchAnalysisOrchestrator {
             `${propertyData.livingArea || 0} sqft living space with ${propertyData.bedrooms}BR/${propertyData.bathrooms}BA`
           ],
           riskFactors: [
-            'Market analysis pending due to Claude API unavailability',
+            'Market analysis pending due to engine failure',
             'Full valuation requires working AI services'
           ],
           opportunities: [
@@ -305,7 +340,7 @@ export class BatchAnalysisOrchestrator {
             'Basic metrics available for evaluation'
           ]
         },
-        confidence: 0.60,
+        confidence: 6.0,  // Database expects 0-9.99 range, 6.0 = 60% confidence
         generatedAt: new Date()
       };
     }
@@ -341,12 +376,15 @@ export class BatchAnalysisOrchestrator {
       else if (finalScore < 80) finalRecommendation = 'CAUTION';
     }
 
-    // Return adjusted analysis
+    // Return adjusted analysis with properly scaled confidence (0-9.99 range)
+    const scaledConfidence = Math.round((primaryAnalysis.confidence + qualityReview.confidenceScore * 10) / 2 * 100) / 100;
+    const finalConfidence = Math.min(9.99, Math.max(0, scaledConfidence));
+    
     return {
       ...primaryAnalysis,
       qualityScore: finalScore,
       recommendation: finalRecommendation,
-      confidence: Math.round((primaryAnalysis.confidence + qualityReview.confidenceScore * 100) / 2),
+      confidence: finalConfidence,
     };
   }
 

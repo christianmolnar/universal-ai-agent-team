@@ -1,6 +1,17 @@
 /**
  * AI Model Service
- * Integrates Claude (Anthropic) and GPT-4 (OpenAI) for property analysis
+ * Integrates Cl      const message = await this.anthropic.messages.create({
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 4096,
+        temperature: 0.3,
+        system: systemPrompt,
+        messages: [
+          {
+            role: 'user',
+            content: `Analyze this property:\n\n${propertyDescription}\n\nProvide a comprehensive ${propertyType} residence analysis.`
+          }
+        ]
+      });pic) and GPT-4 (OpenAI) for property analysis
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -39,7 +50,7 @@ export class AIModelService {
 
     try {
       const message = await this.anthropic.messages.create({
-        model: 'claude-4-sonnet',
+        model: 'claude-3-haiku-20240307',
         max_tokens: 4096,
         temperature: 0.3,
         system: systemPrompt,
